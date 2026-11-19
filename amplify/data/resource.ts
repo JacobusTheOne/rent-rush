@@ -15,7 +15,7 @@ const schema = a.schema({
   GameView: a.customType({
     gameId: a.string().required(),
     name: a.string().required(),
-    /** WAITING | PLAYING | FINISHED | CLOSED (deleted: last player left the lobby) */
+    /** WAITING | PLAYING | FINISHED | CLOSED (deleted: the last human left, or forfeited leaving only bots) */
     status: a.string().required(),
     hostId: a.string().required(),
     maxPlayers: a.integer().required(),

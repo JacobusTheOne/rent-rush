@@ -223,8 +223,24 @@ if (game.status === "PLAYING" && !game.state.players[game.state.current].bot) {
 }
 if (game.status === "PLAYING") {
   const end = await gql(A, `mutation M($g: String!) { leaveGame(gameId: $g) { ${FIELDS} } }`, { g: bg });
-  check(end.status === "FINISHED" && /No human players are left/.test(end.state.log.at(-1).text), "last human leaving ends the game");
+  check(end.status === "CLOSED", "last human forfeiting closes a bots-only table");
 }
+
+// A game in progress whose only human forfeits is closed and deleted, not left FINISHED.
+const solo = await gql(
+  A,
+  `mutation M($n: String!, $p: Int!, $r: Int!) { createGame(name: $n, maxPlayers: $p, maxRounds: $r) { gameId } }`,
+  { n: "Solo vs bot", p: 2, r: 10 },
+);
+await gql(A, `mutation M($g: String!) { addBot(gameId: $g) { gameId } }`, { g: solo.gameId });
+await gql(A, `mutation M($g: String!) { startGame(gameId: $g) { gameId } }`, { g: solo.gameId });
+const forfeited = await gql(A, `mutation M($g: String!) { leaveGame(gameId: $g) { ${FIELDS} } }`, { g: solo.gameId });
+check(forfeited.status === "CLOSED", "forfeiting against only bots closes the table");
+rejected = false;
+try { await gql(A, `query Q($g: String!) { getGame(gameId: $g) { gameId } }`, { g: solo.gameId }); } catch (e) { rejected = /not found/.test(e.message); }
+check(rejected, "closed table is deleted");
+const lobbyAfter = await gql(A, `query { listLobby { gameId } }`);
+check(!lobbyAfter.some((g) => g.gameId === solo.gameId), "closed table is gone from the lobby");
 
 for (const ws of [lobbyWs, gameWs, otherWs]) ws.close();
 await signOut();

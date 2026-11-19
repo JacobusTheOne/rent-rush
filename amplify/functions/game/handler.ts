@@ -75,23 +75,23 @@ export const handler = async (event: GameEvent) => {
   try {
     switch (fieldName) {
       case "listLobby":
-        return listLobby(me);
+        return await listLobby(me);
       case "getGame":
         return view(await load(str(args.gameId, "gameId")));
       case "createGame":
-        return createGame(identity, args);
+        return await createGame(identity, args);
       case "joinGame":
-        return joinGame(identity, str(args.gameId, "gameId"));
+        return await joinGame(identity, str(args.gameId, "gameId"));
       case "leaveGame":
-        return leaveGame(me, str(args.gameId, "gameId"));
+        return await leaveGame(me, str(args.gameId, "gameId"));
       case "startGame":
-        return startGame(me, str(args.gameId, "gameId"));
+        return await startGame(me, str(args.gameId, "gameId"));
       case "addBot":
-        return addBot(me, str(args.gameId, "gameId"));
+        return await addBot(me, str(args.gameId, "gameId"));
       case "removeBot":
-        return removeBot(me, str(args.gameId, "gameId"), str(args.botId, "botId"));
+        return await removeBot(me, str(args.gameId, "gameId"), str(args.botId, "botId"));
       case "gameAction":
-        return gameAction(me, str(args.gameId, "gameId"), parseAction(args.action));
+        return await gameAction(me, str(args.gameId, "gameId"), parseAction(args.action));
       default:
         throw new Error(`Unknown field ${fieldName}`);
     }
@@ -170,17 +170,7 @@ async function leaveGame(me: string, gameId: string) {
   const players = game.players.filter((p) => p.id !== me);
   const humans = players.filter((p) => !p.bot);
   // A table of only bots is pointless: close it when the last human leaves.
-  if (humans.length === 0) {
-    await ddb.send(
-      new DeleteCommand({
-        TableName: GAMES_TABLE,
-        Key: { gameId },
-        ConditionExpression: "version = :v",
-        ExpressionAttributeValues: { ":v": game.version },
-      }),
-    );
-    return view({ ...game, players: [], version: game.version + 1 }, "CLOSED");
-  }
+  if (humans.length === 0) return closeGame(game);
   const hostId = game.hostId === me ? humans[0].id : game.hostId;
   return view(await save(game, { ...game, players, hostId }));
 }
@@ -232,8 +222,25 @@ async function gameAction(me: string, gameId: string, action: IncomingAction) {
     if (err instanceof RuleError) throw new Error(err.message);
     throw err;
   }
+  // The last human forfeiting leaves a bots-only table: close it rather than keep a finished game around.
+  if (action.type === "FORFEIT" && !state.players.some((p) => !p.bot && !p.bankrupt)) {
+    return closeGame(game);
+  }
   const status: Status = state.phase === "OVER" ? "FINISHED" : "PLAYING";
   return view(await save(game, { ...game, status, state }));
+}
+
+/** Deletes the table (if nobody changed it meanwhile); clients and the lobby see status CLOSED. */
+async function closeGame(game: GameItem) {
+  await ddb.send(
+    new DeleteCommand({
+      TableName: GAMES_TABLE,
+      Key: { gameId: game.gameId },
+      ConditionExpression: "version = :v",
+      ExpressionAttributeValues: { ":v": game.version },
+    }),
+  );
+  return view({ ...game, players: [], version: game.version + 1 }, "CLOSED");
 }
 
 // ---------------------------------------------------------------- persistence

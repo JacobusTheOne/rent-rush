@@ -68,8 +68,8 @@ A table needs at least one human. The server chooses every bot move (`chooseBotA
 when it has spare cash, and sells assets to clear debts. The browsers of human players only
 *trigger* bot moves (`gameAction` with `{"type":"BOT_STEP"}`), one step at a time so everyone can
 watch: the first active human drives, and the others take over after a few seconds if that
-browser goes quiet. If every human leaves or goes bankrupt, the game ends and the richest
-remaining player wins.
+browser goes quiet. If the last human leaves (forfeits), the table is closed and deleted. If the
+last human goes bankrupt, the game ends and the richest remaining player wins.
 
 Remove the sandbox backend when you're done: `npm run sandbox:delete`.
 
