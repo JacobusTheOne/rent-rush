@@ -18,8 +18,8 @@ If you have the whole board as one image (7×7 layout, Start bottom-right, squar
 order), cut it up automatically:
 
 ```bash
-npm run art:slice -- "Colourful Rent Rush City Board.png"            # writes 24 squares, centre, background
-npm run art:slice -- "Colourful Rent Rush City Board.png" --dry-run  # only show the detected grid
+npm run art:slice -- art/source/board.jpg            # writes 24 squares, centre, background
+npm run art:slice -- art/source/board.jpg --dry-run  # only show the detected grid
 ```
 
 It finds the squares from the dark gaps between them, so the picture doesn't need a perfectly
@@ -31,7 +31,7 @@ sharper squares (each square should ideally be at least 300 px in the source).
 ### Player tokens from a 2×2 character sheet
 
 ```bash
-npm run art:tokens -- "Glossy Board-Game Player Tokens.png"
+npm run art:tokens -- art/source/tokens.png
 npm run art:tokens -- "sheet.png" --order 4,1,2,3
 ```
 

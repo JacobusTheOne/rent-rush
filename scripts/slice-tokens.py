@@ -4,7 +4,7 @@ token images, cropped to head and shoulders because tokens are shown as small
 circles.
 
 Usage (from the project root):
-    npm run art:tokens -- "Glossy Board-Game Player Tokens.png"
+    npm run art:tokens -- art/source/tokens.png
     npm run art:tokens -- "sheet.png" --order 4,2,3,1
 
 --order lists which sheet position (1 = top-left, 2 = top-right,
