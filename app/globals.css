@@ -747,6 +747,7 @@ dialog.rules li {
 .token.has-art {
   border-width: 2px;
   border-style: solid;
+  border-color: var(--player);
 }
 
 /* ---------- /art-preview ---------- */
@@ -954,9 +955,69 @@ a.link {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-.tokens .token.has-art {
-  width: clamp(14px, 2.4vw, 24px);
-  height: clamp(14px, 2.4vw, 24px);
+/* Board pieces: sized relative to the square (container query units), centred like
+   real pieces standing on it. 1 player 56%, 2 players 46% each, 3-4 in a 2x2 at 40%. */
+.square {
+  container-type: inline-size;
+}
+
+.square .tokens {
+  inset: 0;
+  bottom: auto;
+  left: 0;
+  height: 100%;
+  align-content: center;
+  justify-content: center;
+  gap: 3cqw;
+  pointer-events: none;
+}
+
+.square .tokens .token {
+  --piece: 56cqw;
+  width: var(--piece);
+  height: var(--piece);
+  border-width: max(2px, 1.6cqw);
+  border-style: solid;
+  border-color: rgba(30, 42, 48, 0.85);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.square .tokens.count-2 .token {
+  --piece: 46cqw;
+}
+
+.square .tokens.count-3 .token,
+.square .tokens.count-4 .token {
+  --piece: 40cqw;
+}
+
+.square .tokens .token.has-art {
+  border-color: var(--player);
+}
+
+/* Whose turn it is: gold ring, lifted, gentle pulse. */
+.square .tokens .token.active {
+  border-color: var(--gold);
+  transform: translateY(-4%) scale(1.06);
+  z-index: 1;
+  animation: piece-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes piece-pulse {
+  0%,
+  100% {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 0 rgba(242, 201, 76, 0.7);
+  }
+  50% {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 max(3px, 2.5cqw) rgba(242, 201, 76, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .square .tokens .token.active {
+    animation: none;
+    box-shadow: 0 0 0 max(2px, 1.5cqw) rgba(242, 201, 76, 0.6);
+  }
 }
 
 .player .token.has-art {

@@ -82,9 +82,15 @@ export function Board({ state }: { state: GameState }) {
               </div>
             )}
             {here.length > 0 && (
-              <div className="tokens">
+              <div className={`tokens count-${here.length}`}>
                 {here.map((p) => (
-                  <Token key={p.id} index={p.token} name={p.name} art={art} />
+                  <Token
+                    key={p.id}
+                    index={p.token}
+                    name={p.name}
+                    art={art}
+                    active={p.id === current?.id && state.phase !== "OVER"}
+                  />
                 ))}
               </div>
             )}
