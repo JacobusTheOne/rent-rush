@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BOARD, DISTRICTS, RULES, TOKEN_COLORS, upgradeCost } from "@/game/board";
+import { BOARD, DISTRICTS, RULES, upgradeCost } from "@/game/board";
+import { TOKEN_ART } from "@/game/art";
+import { useAvailableArt } from "@/lib/useArt";
+import { Token } from "./Token";
+
+const TOKEN_SRCS = TOKEN_ART.map((a) => a.src);
 import {
   type Action,
   type GameState,
@@ -79,6 +84,7 @@ export function GameScreen({ game, me, busy, error, onAction, onLeave, onExit }:
 }
 
 function Players({ state, me }: { state: GameState; me: string }) {
+  const art = useAvailableArt(TOKEN_SRCS);
   return (
     <ul className="players">
       {state.players.map((p, i) => (
@@ -86,7 +92,7 @@ function Players({ state, me }: { state: GameState; me: string }) {
           key={p.id}
           className={`player ${i === state.current && state.phase !== "OVER" ? "turn" : ""} ${p.bankrupt ? "out" : ""}`}
         >
-          <span className="token" style={{ background: TOKEN_COLORS[p.token] }} />
+          <Token index={p.token} art={art} />
           <span className="pname">
             {p.name}
             {p.id === me && <span className="badge you">you</span>}

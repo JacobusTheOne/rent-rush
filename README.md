@@ -39,6 +39,11 @@ npm run typecheck
 
 To play multiplayer locally, open a second browser (or a private window) and sign up as another player.
 
+## Board art
+
+All board graphics (squares, centre, background, tokens, dice, Fortune card) are replaceable JPGs
+in `public/board/`. See [BOARD-ART.md](BOARD-ART.md) and preview them at `/art-preview`.
+
 ## Bots
 
 In the waiting room, the host can click an **Open seat** to fill it with a bot (and remove it with ×).

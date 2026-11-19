@@ -675,3 +675,106 @@ dialog.rules li {
   background: var(--border);
   color: var(--text);
 }
+
+/* ---------- board artwork (public/board/*.jpg, see BOARD-ART.md) ---------- */
+
+.board.has-art,
+.square.has-art,
+.board-center.has-art,
+.card.has-art,
+.token.has-art {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.board-center.has-art {
+  border-radius: 6px;
+}
+
+/* Keep live overlays readable on top of any artwork. */
+.square.has-art .sq-owner {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  margin: 0;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.board-center.has-art .center-info {
+  background: rgba(16, 21, 28, 0.75);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+}
+
+.board-center.has-art .jackpot {
+  background: rgba(16, 21, 28, 0.8);
+}
+
+.dice {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.die-img {
+  width: clamp(2rem, 6vw, 3.5rem);
+  height: clamp(2rem, 6vw, 3.5rem);
+  border-radius: 18%;
+  object-fit: cover;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.card.has-art {
+  color: #1e2a30;
+  border: 0;
+  min-height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+}
+
+.card.has-art span {
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+}
+
+.token.has-art {
+  border-width: 2px;
+  border-style: solid;
+}
+
+/* ---------- /art-preview ---------- */
+
+.art-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+}
+
+.art-list li {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.art-list li.ok > span:first-child {
+  color: var(--accent);
+}
+
+.art-list li.missing > span:first-child {
+  color: var(--danger);
+}
+
+a.link {
+  color: var(--accent);
+}
