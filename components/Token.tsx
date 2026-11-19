@@ -9,18 +9,21 @@ export function Token({
   name,
   art,
   active = false,
+  hopping = false,
 }: {
   index: number;
   name?: string;
   art: Set<string>;
   /** Highlight as the player whose turn it is. */
   active?: boolean;
+  /** Currently walking: plays a hop each time it lands on a new square. */
+  hopping?: boolean;
 }) {
   const src = TOKEN_ART[index]?.src;
   const hasArt = !!src && art.has(src);
   return (
     <span
-      className={`token ${hasArt ? "has-art" : ""} ${active ? "active" : ""}`}
+      className={`token ${hasArt ? "has-art" : ""} ${active ? "active" : ""} ${hopping ? "hop" : ""}`}
       style={{
         // backgroundColor, not the `background` shorthand: the shorthand would reset
         // background-size and the image would show at natural size (only a corner visible).

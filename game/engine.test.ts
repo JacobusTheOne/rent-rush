@@ -205,3 +205,39 @@ describe("bots", () => {
     expect(s.log.at(-1)!.text).toMatch(/No human players are left/);
   });
 });
+
+describe("move tracking (for animation)", () => {
+  it("records a dice walk and counts the roll", () => {
+    const s = roll(twoPlayer(), "a", 2, 3); // 0 -> 5
+    expect(s.rollSeq).toBe(1);
+    expect(s.moveSeq).toBe(1);
+    expect(s.lastMoves).toEqual([{ player: "a", from: 0, to: 5, steps: 5 }]);
+  });
+
+  it("records the walk and then a jump when landing on Go to Cell", () => {
+    const start = twoPlayer();
+    start.players[0].position = 13;
+    const s = roll(start, "a", 2, 3); // 13 -> 18 (Go to Cell) -> 6
+    expect(s.lastMoves).toEqual([
+      { player: "a", from: 13, to: 18, steps: 5 },
+      { player: "a", from: 18, to: 6, steps: 0 },
+    ]);
+  });
+
+  it("clears moves on actions that don't move anyone", () => {
+    let s = roll(twoPlayer(), "a", 2, 3);
+    s = act(s, "a", "END_TURN");
+    expect(s.lastMoves).toEqual([]);
+    expect(s.moveSeq).toBe(1);
+  });
+
+  it("works on games saved before move tracking existed", () => {
+    const old = twoPlayer() as Partial<GameState>;
+    delete old.rollSeq;
+    delete old.moveSeq;
+    delete old.lastMoves;
+    const s = roll(old as GameState, "a", 2, 3);
+    expect(s.rollSeq).toBe(1);
+    expect(s.lastMoves).toHaveLength(1);
+  });
+});

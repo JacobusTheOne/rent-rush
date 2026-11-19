@@ -68,6 +68,20 @@ export interface GameState {
   log: LogEntry[];
   logSeq: number;
   winner: string | null;
+  /** Increments on every dice roll (lets the UI animate the dice). Absent in older saved games. */
+  rollSeq?: number;
+  /** Increments on every action that moved a piece. */
+  moveSeq?: number;
+  /** The piece movements caused by the most recent action, in order (for animation). */
+  lastMoves?: Move[];
+}
+
+/** One piece movement. steps > 0 walks forward, < 0 walks back, 0 = direct jump. */
+export interface Move {
+  player: string;
+  from: number;
+  to: number;
+  steps: number;
 }
 
 export type Action =
@@ -142,6 +156,9 @@ export function newGame(
     log: [],
     logSeq: 0,
     winner: null,
+    rollSeq: 0,
+    moveSeq: 0,
+    lastMoves: [],
   };
   log(s, `Game on! ${s.players[0].name} goes first. ${maxRounds} rounds.`);
   return s;
@@ -214,6 +231,7 @@ export function canSellProperty(s: GameState, playerId: string, square: number):
 
 export function applyAction(state: GameState, actorId: string, action: Action, ctx: Ctx): GameState {
   const s = structuredClone(state);
+  s.lastMoves = [];
   if (s.phase === "OVER") throw new RuleError("The game is over");
 
   const actor = s.players.find((p) => p.id === actorId);
@@ -329,7 +347,12 @@ export function applyAction(state: GameState, actorId: string, action: Action, c
     default:
       throw new RuleError("Unknown action");
   }
+  if (s.lastMoves?.length) s.moveSeq = (s.moveSeq ?? 0) + 1;
   return s;
+}
+
+function recordMove(s: GameState, p: PlayerState, to: number, steps: number) {
+  (s.lastMoves ??= []).push({ player: p.id, from: p.position, to, steps });
 }
 
 // ---------------------------------------------------------------- internals
@@ -373,6 +396,7 @@ function roll(s: GameState, p: PlayerState, ctx: Ctx) {
   const d2 = ctx.rng(6) + 1;
   const doubles = d1 === d2;
   s.dice = [d1, d2];
+  s.rollSeq = (s.rollSeq ?? 0) + 1;
   s.lastCard = null;
   log(s, `${p.name} rolled ${d1} + ${d2}${doubles ? " (doubles!)" : ""}.`);
 
@@ -423,11 +447,13 @@ function moveBy(s: GameState, p: PlayerState, steps: number, ctx: Ctx) {
     p.cash += RULES.passStartBonus;
     log(s, `${p.name} passed Start: +$${RULES.passStartBonus}.`);
   }
+  recordMove(s, p, target, steps);
   p.position = target;
   landOn(s, p, ctx);
 }
 
 function sendToCell(s: GameState, p: PlayerState) {
+  if (p.position !== CELL_INDEX) recordMove(s, p, CELL_INDEX, 0);
   p.position = CELL_INDEX;
   p.inCell = true;
   p.cellAttempts = 0;
@@ -536,6 +562,7 @@ function drawFortune(s: GameState, p: PlayerState, ctx: Ctx) {
       sendToCell(s, p);
       return;
     case 7:
+      recordMove(s, p, (p.position - 3 + BOARD_SIZE) % BOARD_SIZE, -3);
       p.position = (p.position - 3 + BOARD_SIZE) % BOARD_SIZE;
       landOn(s, p, ctx);
       return;

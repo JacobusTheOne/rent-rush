@@ -6,6 +6,7 @@ import { TOKEN_ART } from "@/game/art";
 import { type Action, type GameState, netWorth } from "@/game/engine";
 import type { Game } from "@/lib/api";
 import { useAvailableArt } from "@/lib/useArt";
+import { useBoardAnimation } from "@/lib/useBoardAnimation";
 import { Board } from "./Board";
 import { PlayerCards } from "./PlayerCards";
 import { Token } from "./Token";
@@ -22,8 +23,11 @@ interface Props {
   onExit: () => void;
 }
 
-export function GameScreen({ game, me, busy, error, onAction, onLeave, onExit }: Props) {
+export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLeave, onExit }: Props) {
   const state = game.state!;
+  const view = useBoardAnimation(state);
+  // Hold the turn buttons until the dice and pieces have finished moving.
+  const busy = requestBusy || view.animating;
   const current = state.players[state.current];
   const mePlayer = state.players.find((p) => p.id === me);
   const myTurn = current.id === me && state.phase !== "OVER";
@@ -31,7 +35,7 @@ export function GameScreen({ game, me, busy, error, onAction, onLeave, onExit }:
   return (
     <div className="game">
       <div className="game-board">
-        <Board state={state} />
+        <Board state={state} view={view} />
       </div>
       <aside className="sidebar">
         <h2 className="game-name">{game.name}</h2>

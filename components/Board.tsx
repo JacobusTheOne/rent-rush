@@ -4,6 +4,7 @@ import { BOARD, DISTRICTS, TOKEN_COLORS, gridPosition, isOwnable } from "@/game/
 import { ALL_ART, BACKGROUND_ART, CARD_ART, CENTER_ART, DIE_ART, SQUARE_ART } from "@/game/art";
 import { rentFor, type GameState } from "@/game/engine";
 import { useAvailableArt } from "@/lib/useArt";
+import type { BoardView } from "@/lib/useBoardAnimation";
 import { Token } from "./Token";
 
 const ALL_SRCS = ALL_ART.map((a) => a.src);
@@ -23,11 +24,14 @@ function bg(art: Set<string>, src: string): React.CSSProperties | undefined {
   return art.has(src) ? { backgroundImage: `url("${src}")` } : undefined;
 }
 
-export function Board({ state }: { state: GameState }) {
+/** view: what to show while animating (lib/useBoardAnimation); omitted = the state as-is. */
+export function Board({ state, view }: { state: GameState; view?: BoardView }) {
   const art = useAvailableArt(ALL_SRCS);
   const current = state.players[state.current];
   const hasCenter = art.has(CENTER_ART.src);
-  const diceArt = state.dice?.every((d) => art.has(DIE_ART[d - 1].src));
+  const posOf = (id: string, fallback: number) => view?.positions[id] ?? fallback;
+  const dice = view ? view.dice : state.dice;
+  const diceArt = dice?.every((d) => art.has(DIE_ART[d - 1].src));
 
   return (
     <div
@@ -42,7 +46,7 @@ export function Board({ state }: { state: GameState }) {
         const hasArt = art.has(squareSrc);
         const holding = state.holdings[i];
         const owner = holding ? state.players.find((p) => p.id === holding.owner) : undefined;
-        const here = state.players.filter((p) => !p.bankrupt && p.position === i);
+        const here = state.players.filter((p) => !p.bankrupt && posOf(p.id, p.position) === i);
         const corner = i % 6 === 0;
         const title = [
           sq.name,
@@ -55,7 +59,7 @@ export function Board({ state }: { state: GameState }) {
         return (
           <div
             key={i}
-            className={`square ${corner ? "corner" : ""} ${hasArt ? "has-art" : ""} ${current && current.position === i ? "active" : ""}`}
+            className={`square ${corner ? "corner" : ""} ${hasArt ? "has-art" : ""} ${current && posOf(current.id, current.position) === i ? "active" : ""}`}
             style={{
               gridRow: row,
               gridColumn: col,
@@ -90,6 +94,7 @@ export function Board({ state }: { state: GameState }) {
                     name={p.name}
                     art={art}
                     active={p.id === current?.id && state.phase !== "OVER"}
+                    hopping={p.id === view?.moving}
                   />
                 ))}
               </div>
@@ -104,16 +109,19 @@ export function Board({ state }: { state: GameState }) {
         <div className="center-info muted small">
           Round {Math.min(state.round, state.maxRounds)} of {state.maxRounds}
         </div>
-        {state.dice && (
-          <div className="dice" aria-label={`Dice: ${state.dice[0]} and ${state.dice[1]}`}>
+        {dice && (
+          <div
+            className={`dice ${view?.rolling ? "rolling" : ""}`}
+            aria-label={view?.rolling ? "Rolling dice" : `Dice: ${dice[0]} and ${dice[1]}`}
+          >
             {diceArt ? (
-              state.dice.map((d, k) => (
+              dice.map((d, k) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img key={k} className="die-img" src={DIE_ART[d - 1].src} alt="" />
               ))
             ) : (
               <>
-                {DICE[state.dice[0]]} {DICE[state.dice[1]]}
+                <span className="die-glyph">{DICE[dice[0]]}</span> <span className="die-glyph">{DICE[dice[1]]}</span>
               </>
             )}
           </div>

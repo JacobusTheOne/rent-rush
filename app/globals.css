@@ -1029,3 +1029,61 @@ a.link {
   width: 18px;
   height: 18px;
 }
+
+/* ---------- animation: dice tumble + piece hops (off with reduced motion) ---------- */
+
+.dice.rolling .die-img,
+.dice.rolling .die-glyph {
+  display: inline-block;
+  animation: die-tumble 0.32s ease-in-out infinite;
+}
+
+.dice.rolling .die-img:nth-child(2),
+.dice.rolling .die-glyph:nth-of-type(2) {
+  animation-duration: 0.28s;
+  animation-direction: reverse;
+}
+
+@keyframes die-tumble {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-22%) rotate(90deg) scale(1.05);
+  }
+  50% {
+    transform: translateY(0) rotate(180deg);
+  }
+  75% {
+    transform: translateY(-12%) rotate(270deg) scale(0.97);
+  }
+  100% {
+    transform: translateY(0) rotate(360deg);
+  }
+}
+
+/* Each re-render on a new square replays the hop (the piece is a new element there). */
+.square .tokens .token.hop {
+  animation: piece-hop 0.2s ease-out;
+  z-index: 2;
+}
+
+@keyframes piece-hop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  45% {
+    transform: translateY(-28%) scale(1.08);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dice.rolling .die-img,
+  .dice.rolling .die-glyph,
+  .square .tokens .token.hop {
+    animation: none;
+  }
+}

@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { ALL_ART } from "@/game/art";
-import { FORTUNE_CARDS, newGame, type GameState } from "@/game/engine";
+import { FORTUNE_CARDS, applyAction, newGame, type GameState } from "@/game/engine";
 import { useAvailableArt } from "@/lib/useArt";
+import { useBoardAnimation } from "@/lib/useBoardAnimation";
 import { Board } from "@/components/Board";
 import { PlayerCards } from "@/components/PlayerCards";
 
@@ -12,7 +13,7 @@ import { PlayerCards } from "@/components/PlayerCards";
  * image file. No sign-in needed and no backend calls. Open /art-preview while
  * replacing the JPGs in public/board/ (see BOARD-ART.md).
  */
-function sampleState(dice: [number, number]): GameState {
+function sampleState(): GameState {
   const s = newGame(
     [
       { id: "p1", name: "Player 1" },
@@ -38,16 +39,30 @@ function sampleState(dice: [number, number]): GameState {
   };
   s.players[0].freeCards = 1;
   s.phase = "END";
-  s.dice = dice;
+  s.dice = [3, 5];
   s.jackpot = 225;
   s.round = 7;
   s.lastCard = FORTUNE_CARDS[0];
   return s;
 }
 
+/** Demo turn: the next player rolls for real through the engine, so the board animates. */
+function demoRoll(prev: GameState): GameState {
+  const s = structuredClone(prev);
+  s.phase = "ROLL";
+  s.extraRoll = false;
+  s.doublesStreak = 0;
+  s.players.forEach((p) => (p.inCell = false));
+  const actor = s.players[s.current].id;
+  const next = applyAction(s, actor, { type: "ROLL" }, { rng: (m) => Math.floor(Math.random() * m), now: Date.now() });
+  next.current = (prev.current + 1) % next.players.length;
+  next.phase = "END";
+  return next;
+}
+
 export default function ArtPreview() {
-  const [dice, setDice] = useState<[number, number]>([3, 5]);
-  const state = useMemo(() => sampleState(dice), [dice]);
+  const [state, setState] = useState(sampleState);
+  const view = useBoardAnimation(state);
   const srcs = useMemo(() => ALL_ART.map((a) => a.src), []);
   const found = useAvailableArt(srcs);
 
@@ -58,10 +73,11 @@ export default function ArtPreview() {
         <div className="account">
           <button
             type="button"
-            className="secondary"
-            onClick={() => setDice([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)] as [number, number])}
+            className="secondary demo-roll"
+            disabled={view.animating}
+            onClick={() => setState(demoRoll)}
           >
-            Roll preview dice
+            🎲 Roll &amp; move ({state.players[state.current].name})
           </button>
           <a className="link" href="/">
             Back to the game
@@ -74,7 +90,7 @@ export default function ArtPreview() {
       </p>
       <div className="game">
         <div className="game-board">
-          <Board state={state} />
+          <Board state={state} view={view} />
         </div>
         <aside className="sidebar">
           <PlayerCards state={state} me="p1" busy={false} myTurn onAction={() => {}} />

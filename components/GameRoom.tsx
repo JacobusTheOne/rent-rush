@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RULES } from "@/game/board";
 import { api, errorMessage, type Game } from "@/lib/api";
+import { animationMs } from "@/lib/useBoardAnimation";
 import { GameScreen } from "./GameScreen";
 
 /** Pause between bot moves so humans can follow along. */
@@ -59,7 +60,9 @@ export function GameRoom({ gameId, me, onExit }: Props) {
     if (!s || s.phase === "OVER" || !s.players[s.current].bot) return null;
     if (!s.players.some((p) => p.id === me && !p.bot)) return null;
     const driver = s.players.find((p) => !p.bot && !p.bankrupt);
-    return { version: game!.version, delay: driver?.id === me ? BOT_STEP_MS : BOT_BACKUP_MS };
+    // Let the dice/piece animation of the bot's last move finish before its next one.
+    const base = driver?.id === me ? BOT_STEP_MS : BOT_BACKUP_MS;
+    return { version: game!.version, delay: base + animationMs(s) };
   })();
 
   // Bumped after a failed bot step so the effect retries even if the game didn't change.
