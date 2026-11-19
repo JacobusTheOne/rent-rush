@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BOARD_SIZE } from "@/game/board";
 import type { GameState, Move } from "@/game/engine";
+import { initSound, playSound } from "./sound";
 
 /** What the board should show right now (may lag the real state while animating). */
 export interface BoardView {
@@ -56,6 +57,7 @@ export function useBoardAnimation(state: GameState): BoardView {
 
   useEffect(() => {
     alive.current = true;
+    initSound();
     return () => {
       alive.current = false;
     };
@@ -77,6 +79,7 @@ export function useBoardAnimation(state: GameState): BoardView {
       });
 
     if ((!newRoll && !newMove) || prefersReducedMotion()) {
+      if (newRoll && state.dice) playSound("dice");
       if (pending.current === 0) syncToLatest(); // otherwise the running queue syncs at its end
       return;
     }
@@ -91,6 +94,7 @@ export function useBoardAnimation(state: GameState): BoardView {
       const stepMs = () => (pending.current > 1 ? CATCH_UP_STEP_MS : STEP_MS);
 
       if (newRoll && dice && pending.current === 1) {
+        if (alive.current) playSound("dice");
         for (let t = 0; t < TUMBLE_MS; t += TUMBLE_FRAME_MS) {
           update({
             rolling: true,
@@ -105,6 +109,7 @@ export function useBoardAnimation(state: GameState): BoardView {
         if (m.steps === 0) {
           if (alive.current) {
             setView((v) => ({ ...v, moving: m.player, positions: { ...v.positions, [m.player]: m.to } }));
+            playSound("step");
           }
           await sleep(JUMP_MS);
           continue;
@@ -114,6 +119,7 @@ export function useBoardAnimation(state: GameState): BoardView {
           const pos = (m.from + dir * k + BOARD_SIZE) % BOARD_SIZE;
           if (alive.current) {
             setView((v) => ({ ...v, moving: m.player, positions: { ...v.positions, [m.player]: pos } }));
+            playSound("step");
           }
           await sleep(stepMs());
         }

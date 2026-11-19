@@ -7,6 +7,7 @@ import { type Action, type GameState, netWorth } from "@/game/engine";
 import type { Game } from "@/lib/api";
 import { useAvailableArt } from "@/lib/useArt";
 import { useBoardAnimation } from "@/lib/useBoardAnimation";
+import { isMuted, onMutedChange, setMuted } from "@/lib/sound";
 import { Board } from "./Board";
 import { PlayerCards } from "./PlayerCards";
 import { Token } from "./Token";
@@ -60,6 +61,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
           <button type="button" className="secondary" onClick={onExit}>
             Lobby
           </button>
+          <SoundToggle />
           {mePlayer && !mePlayer.bankrupt && state.phase !== "OVER" && (
             <button
               type="button"
@@ -75,6 +77,27 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
         </div>
       </aside>
     </div>
+  );
+}
+
+function SoundToggle() {
+  // Starts unmuted on the server render; the saved setting is applied after mount.
+  const [muted, setMutedState] = useState(false);
+  useEffect(() => {
+    setMutedState(isMuted());
+    return onMutedChange(setMutedState);
+  }, []);
+  return (
+    <button
+      type="button"
+      className="secondary"
+      aria-pressed={muted}
+      title={muted ? "Sound off" : "Sound on"}
+      aria-label={muted ? "Turn sound on" : "Turn sound off"}
+      onClick={() => setMuted(!muted)}
+    >
+      {muted ? "🔇" : "🔊"}
+    </button>
   );
 }
 

@@ -60,6 +60,9 @@ etc.) are in `netlify.toml`.
 All board graphics (squares, centre, background, tokens, dice, Fortune card) are replaceable JPGs
 in `public/board/`. See [BOARD-ART.md](BOARD-ART.md) and preview them at `/art-preview`.
 
+Sound effects are in `public/sound/` (`dice.wav` when dice are rolled, `piece-move.wav` for every
+square a piece moves). Replace them with files of the same name; players can mute with 🔊 in the game.
+
 ## Bots
 
 In the waiting room, the host can click an **Open seat** to fill it with a bot (and remove it with ×).
