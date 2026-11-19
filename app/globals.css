@@ -948,3 +948,23 @@ a.link {
 .deed.walk-free .deed-body {
   justify-content: center;
 }
+
+/* Character tokens need room to be recognisable (plain colour dots stay small). */
+.token.has-art {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.tokens .token.has-art {
+  width: clamp(14px, 2.4vw, 24px);
+  height: clamp(14px, 2.4vw, 24px);
+}
+
+.player .token.has-art {
+  width: 28px;
+  height: 28px;
+}
+
+.card-tab .token.has-art {
+  width: 18px;
+  height: 18px;
+}

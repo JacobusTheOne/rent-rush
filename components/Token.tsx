@@ -11,7 +11,9 @@ export function Token({ index, name, art }: { index: number; name?: string; art:
     <span
       className={`token ${hasArt ? "has-art" : ""}`}
       style={{
-        background: TOKEN_COLORS[index],
+        // backgroundColor, not the `background` shorthand: the shorthand would reset
+        // background-size and the image would show at natural size (only a corner visible).
+        backgroundColor: TOKEN_COLORS[index],
         ...(hasArt ? { backgroundImage: `url("${src}")`, borderColor: TOKEN_COLORS[index] } : {}),
       }}
       title={name}
