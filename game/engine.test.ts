@@ -1,0 +1,207 @@
+import { describe, expect, it } from "vitest";
+import { RULES } from "./board";
+import { type Ctx, type GameState, RuleError, applyAction, chooseBotAction, newGame, netWorth, rentFor } from "./engine";
+
+/** rng that returns scripted values (dice values are value-1), then 0s. */
+function scripted(values: number[], now = 1_000): Ctx {
+  const queue = [...values];
+  return { rng: () => queue.shift() ?? 0, now };
+}
+
+const A = { id: "a", name: "Ann" };
+const B = { id: "b", name: "Bob" };
+
+/** Two-player game with Ann first (shuffle rng 0 swaps [a,b] -> [b,a], so feed 1 to keep order). */
+function twoPlayer(maxRounds = 20): GameState {
+  return newGame([A, B], maxRounds, scripted([1]));
+}
+
+const roll = (s: GameState, id: string, d1: number, d2: number, extra: number[] = []) =>
+  applyAction(s, id, { type: "ROLL" }, scripted([d1 - 1, d2 - 1, ...extra]));
+const act = (s: GameState, id: string, type: string, square?: number, now = 1_000) =>
+  applyAction(s, id, { type, square } as never, scripted([], now));
+
+describe("Rent Rush engine", () => {
+  it("starts everyone on Start with starting cash", () => {
+    const s = twoPlayer();
+    expect(s.players.map((p) => p.id)).toEqual(["a", "b"]);
+    expect(s.players.every((p) => p.cash === RULES.startingCash && p.position === 0)).toBe(true);
+    expect(s.phase).toBe("ROLL");
+  });
+
+  it("rejects moves out of turn", () => {
+    expect(() => roll(twoPlayer(), "b", 1, 2)).toThrow(RuleError);
+  });
+
+  it("offers an unowned property and lets you buy it", () => {
+    let s = roll(twoPlayer(), "a", 1, 1 + 0); // 1+1 doubles -> square 2 (Canal Walk)
+    expect(s.players[0].position).toBe(2);
+    expect(s.phase).toBe("BUY");
+    s = act(s, "a", "BUY");
+    expect(s.holdings["2"]).toEqual({ owner: "a", level: 0 });
+    expect(s.players[0].cash).toBe(1500 - 80);
+    expect(s.phase).toBe("ROLL"); // doubles -> roll again
+  });
+
+  it("charges rent, doubled for a full district", () => {
+    let s = twoPlayer();
+    s.holdings["1"] = { owner: "a", level: 0 };
+    expect(rentFor(s, 1)).toBe(6);
+    s.holdings["2"] = { owner: "a", level: 0 };
+    expect(rentFor(s, 1)).toBe(12);
+    s.current = 1;
+    s = roll(s, "b", 1, 0 + 1); // 1+1 -> square 2, rent 16
+    expect(s.players[1].cash).toBe(1500 - 16);
+    expect(s.players[0].cash).toBe(1500 + 16);
+  });
+
+  it("pays a Home Turf bonus on your own street", () => {
+    let s = twoPlayer();
+    s.holdings["7"] = { owner: "a", level: 0 };
+    s = roll(s, "a", 3, 4); // square 7
+    expect(s.players[0].cash).toBe(1500 + RULES.homeTurfBonus);
+  });
+
+  it("pays $400 for landing exactly on Start and $200 for passing", () => {
+    let s = twoPlayer();
+    s.players[0].position = 19;
+    s = roll(s, "a", 2, 3); // 24 -> Start
+    expect(s.players[0].position).toBe(0);
+    expect(s.players[0].cash).toBe(1500 + 400);
+
+    s = twoPlayer();
+    s.players[0].position = 20;
+    s = roll(s, "a", 2, 3); // 25 -> square 1
+    expect(s.players[0].cash).toBe(1500 + 200);
+  });
+
+  it("puts taxes in the Jackpot, paid out at Rest Stop", () => {
+    let s = roll(twoPlayer(), "a", 2, 3); // square 5: Parking Fine 75
+    expect(s.jackpot).toBe(75);
+    s = act(s, "a", "END_TURN");
+    s.players[1].position = 7;
+    s = roll(s, "b", 2, 3); // square 12: Rest Stop
+    expect(s.players[1].cash).toBe(1500 + 75);
+    expect(s.jackpot).toBe(0);
+  });
+
+  it("only allows upgrades on a full district", () => {
+    const s = twoPlayer();
+    s.phase = "END";
+    s.holdings["23"] = { owner: "a", level: 0 };
+    expect(() => act(s, "a", "UPGRADE", 23)).toThrow(/whole district/);
+    s.holdings["19"] = { owner: "a", level: 0 };
+    const up = act(s, "a", "UPGRADE", 23);
+    expect(up.holdings["23"].level).toBe(1);
+    expect(up.players[0].cash).toBe(1500 - 160);
+    expect(rentFor(up, 23)).toBe(32 * 3);
+  });
+
+  it("enters DEBT when you can't pay, and bankruptcy hands cash to the creditor", () => {
+    let s = twoPlayer();
+    s.players[0].cash = 40; // Parking Fine is 75
+    s = roll(s, "a", 2, 3);
+    expect(s.phase).toBe("DEBT");
+    expect(() => act(s, "a", "PAY_DEBT")).toThrow(/Not enough/);
+    s = act(s, "a", "BANKRUPT");
+    expect(s.players[0].bankrupt).toBe(true);
+    expect(s.jackpot).toBe(40);
+    expect(s.phase).toBe("OVER");
+    expect(s.winner).toBe("b");
+  });
+
+  it("lets you sell a property to clear a debt", () => {
+    let s = twoPlayer();
+    s.holdings["4"] = { owner: "a", level: 0 }; // North Station, sells for 100
+    s.players[0].cash = 40;
+    s = roll(s, "a", 2, 3);
+    s = act(s, "a", "SELL_PROPERTY", 4);
+    expect(s.players[0].cash).toBe(140);
+    s = act(s, "a", "PAY_DEBT");
+    expect(s.players[0].cash).toBe(65);
+    expect(s.phase).toBe("END");
+  });
+
+  it("sends you to the Holding Cell on three doubles", () => {
+    let s = twoPlayer();
+    s = roll(s, "a", 1, 1); // -> 2 (buy offer)
+    s = act(s, "a", "DECLINE");
+    s = roll(s, "a", 2, 2); // -> 6 (cell, visiting)
+    s = roll(s, "a", 3, 3);
+    expect(s.players[0].inCell).toBe(true);
+    expect(s.players[0].position).toBe(6);
+    expect(s.phase).toBe("END");
+  });
+
+  it("ends the game after the round limit with the richest player winning", () => {
+    let s = twoPlayer(1);
+    s.players[1].cash = 5000;
+    s.phase = "END";
+    s = act(s, "a", "END_TURN");
+    s.phase = "END";
+    s = act(s, "b", "END_TURN");
+    expect(s.phase).toBe("OVER");
+    expect(s.winner).toBe("b");
+    expect(netWorth(s, "b")).toBe(5000);
+  });
+
+  it("lets other players skip an idle turn only after the timeout", () => {
+    const s = twoPlayer();
+    expect(() => act(s, "b", "SKIP_IDLE", undefined, 1_000 + 10_000)).toThrow(/longer/);
+    const skipped = act(s, "b", "SKIP_IDLE", undefined, 1_000 + RULES.idleMs);
+    expect(skipped.current).toBe(1);
+  });
+
+  it("forfeit by a non-current player in a 3-player game keeps the turn order", () => {
+    let s = newGame([A, B, { id: "c", name: "Cy" }], 20, scripted([2, 1]));
+    const order = s.players.map((p) => p.id);
+    s = act(s, order[2], "FORFEIT");
+    expect(s.players[2].bankrupt).toBe(true);
+    expect(s.current).toBe(0);
+    expect(s.phase).toBe("ROLL");
+  });
+});
+
+describe("bots", () => {
+  /** Seeded PRNG so a failure is reproducible. */
+  function seeded(seed: number) {
+    let x = seed;
+    return (max: number) => {
+      x = (x * 1103515245 + 12345) % 2147483648;
+      return x % max;
+    };
+  }
+
+  it("bot-only games always make legal moves and finish", { timeout: 30_000 }, () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const rng = seeded(seed);
+      const ctx = { rng, now: 0 };
+      const bots = [1, 2, 3, 4].map((n) => ({ id: `bot-${n}`, name: `Bot ${n}`, bot: true }));
+      let s = newGame(bots, 30, ctx);
+      let steps = 0;
+      while (s.phase !== "OVER") {
+        const actor = s.players[s.current].id;
+        s = applyAction(s, actor, chooseBotAction(s), ctx); // throws on an illegal move
+        if (++steps > 20_000) throw new Error(`seed ${seed} did not finish`);
+      }
+      expect(s.winner).toBeTruthy();
+    }
+  });
+
+  it("buys an affordable property and declines when it would drop below its reserve", () => {
+    const s = newGame([A, { id: "bot", name: "Bot", bot: true }], 20, scripted([1]));
+    s.current = 1;
+    s.phase = "BUY";
+    s.pendingBuy = 23; // Golden Mile, $320
+    expect(chooseBotAction(s).type).toBe("BUY");
+    s.players[1].cash = 400;
+    expect(chooseBotAction(s).type).toBe("DECLINE");
+  });
+
+  it("ends the game when the last human forfeits", () => {
+    let s = newGame([A, { id: "b1", name: "Bot 1", bot: true }, { id: "b2", name: "Bot 2", bot: true }], 20, scripted([2, 1]));
+    s = act(s, "a", "FORFEIT");
+    expect(s.phase).toBe("OVER");
+    expect(s.log.at(-1)!.text).toMatch(/No human players are left/);
+  });
+});

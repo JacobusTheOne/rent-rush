@@ -1,0 +1,677 @@
+:root {
+  --bg: #10151c;
+  --surface: #18212b;
+  --surface-2: #213040;
+  --border: #2f4254;
+  --text: #e9f0f5;
+  --muted: #93a6b6;
+  --accent: #37c88a;
+  --accent-hover: #4fdca0;
+  --danger: #e5484d;
+  --gold: #f2c94c;
+  --radius: 12px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: radial-gradient(circle at 15% 0%, #173a32 0%, var(--bg) 55%) fixed;
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.5rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+}
+
+h3 {
+  font-size: 0.95rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+button {
+  font: inherit;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  background: var(--accent);
+  color: #06261a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+button.secondary:hover:not(:disabled) {
+  background: var(--border);
+}
+
+button.danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+button.link {
+  background: none;
+  color: var(--accent);
+  padding: 0.25rem 0.5rem;
+}
+
+button.tiny {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+input,
+select {
+  font: inherit;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.8rem;
+}
+
+.error {
+  color: #ffb4b6;
+  background: rgba(229, 72, 77, 0.12);
+  border: 1px solid rgba(229, 72, 77, 0.4);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.row > label {
+  flex: 1;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.center {
+  text-align: center;
+  max-width: 420px;
+  margin: 3rem auto;
+}
+
+.badge {
+  font-size: 0.68rem;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.badge.you {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- auth ---------- */
+
+.auth-shell {
+  min-height: 100vh;
+}
+
+.auth-header {
+  text-align: center;
+  padding: 1.5rem 1rem 0.5rem;
+}
+
+[data-amplify-authenticator] {
+  --amplify-components-authenticator-router-background-color: var(--surface);
+  --amplify-components-authenticator-router-border-color: var(--border);
+  --amplify-components-fieldcontrol-color: var(--text);
+  --amplify-components-field-label-color: var(--muted);
+  --amplify-components-tabs-item-color: var(--muted);
+  --amplify-components-tabs-item-active-color: var(--accent);
+  --amplify-components-tabs-item-active-border-color: var(--accent);
+  --amplify-components-button-primary-background-color: var(--accent);
+  --amplify-components-button-primary-hover-background-color: var(--accent-hover);
+  --amplify-components-button-primary-color: #06261a;
+  --amplify-components-button-link-color: var(--accent);
+  --amplify-components-text-color: var(--text);
+  --amplify-components-heading-color: var(--text);
+  --amplify-components-fieldcontrol-border-color: var(--border);
+  --amplify-components-fieldcontrol-focus-border-color: var(--accent);
+  padding-top: 1rem;
+}
+
+/* Sign-in fields: set text AND background explicitly so typed text (incl. passwords)
+   stays readable whatever theme the browser applies. */
+[data-amplify-authenticator] input.amplify-input,
+[data-amplify-authenticator] input.amplify-field-group__control {
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  background-color: var(--bg);
+}
+
+[data-amplify-authenticator] .amplify-input::placeholder {
+  color: var(--muted);
+  -webkit-text-fill-color: var(--muted);
+}
+
+/* Show/hide password (eye) button next to the password field. */
+[data-amplify-authenticator] .amplify-field__show-password {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+[data-amplify-authenticator] .amplify-field__show-password:hover:not(:disabled) {
+  background: var(--border);
+}
+
+/* Chrome autofill / suggested password paints its own colors; override them. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  box-shadow: 0 0 0 1000px var(--bg) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* ---------- layout ---------- */
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px 2rem;
+}
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem 0;
+}
+
+.brand {
+  background: none;
+  color: var(--text);
+  font-size: 1.4rem;
+  font-weight: 800;
+  padding: 0;
+}
+
+.brand:hover:not(:disabled) {
+  background: none;
+}
+
+.logo {
+  color: var(--gold);
+  margin-right: 0.4rem;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+
+/* ---------- lobby ---------- */
+
+.lobby {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  align-items: start;
+}
+
+.lobby .create {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+}
+
+.lobby > :not(.create) {
+  grid-column: 2;
+}
+
+.lobby > .error {
+  margin: 0;
+}
+
+.game-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.game-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+/* ---------- waiting room ---------- */
+
+.waiting {
+  max-width: 520px;
+  margin: 1rem auto;
+}
+
+.seats {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.seat {
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+}
+
+.seat.taken {
+  border-style: solid;
+  background: var(--surface-2);
+}
+
+/* ---------- game ---------- */
+
+.game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.sidebar {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.game-name {
+  margin: 0;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  gap: 3px;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  background: #0b2a22;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+}
+
+.square {
+  position: relative;
+  background: #f4efe1;
+  color: #1e2a30;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px;
+  font-size: clamp(0.5rem, 1.25vw, 0.75rem);
+  text-align: center;
+  line-height: 1.1;
+}
+
+.square.corner {
+  background: #e3dcc6;
+  font-weight: 700;
+}
+
+.square.active {
+  box-shadow: 0 0 0 2px var(--gold) inset;
+}
+
+.strip {
+  width: calc(100% + 4px);
+  height: 18%;
+  margin: -2px -2px 2px;
+  flex-shrink: 0;
+}
+
+.sq-name {
+  font-weight: 600;
+}
+
+.sq-icon {
+  display: block;
+  font-size: 1.3em;
+}
+
+.sq-price,
+.sq-owner {
+  margin-top: auto;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+.pips {
+  margin-left: 0.15rem;
+  letter-spacing: -0.1em;
+}
+
+.tokens {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.token {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #1e2a30;
+  flex-shrink: 0;
+}
+
+.board-center {
+  grid-row: 2 / 7;
+  grid-column: 2 / 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.board-title {
+  font-size: clamp(1.4rem, 4.5vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  transform: rotate(-8deg);
+}
+
+.dice {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 1;
+}
+
+.jackpot {
+  background: rgba(242, 201, 76, 0.15);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  border-radius: 999px;
+  padding: 0.25rem 0.9rem;
+}
+
+.card {
+  max-width: 80%;
+  font-size: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+}
+
+.players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.player {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.player.turn {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.player.out {
+  opacity: 0.45;
+}
+
+.player .worth {
+  grid-column: 2 / 4;
+}
+
+.cash {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions p {
+  margin-top: 0;
+}
+
+.winner {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.props {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.props li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.props .pname {
+  flex: 1;
+}
+
+.prop-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.log ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 0.82rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+/* ---------- rules dialog ---------- */
+
+dialog.rules {
+  max-width: 640px;
+  width: calc(100% - 32px);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+}
+
+dialog.rules::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+dialog.rules li {
+  margin-bottom: 0.4rem;
+  line-height: 1.4;
+}
+
+/* ---------- small screens ---------- */
+
+@media (max-width: 900px) {
+  .game {
+    grid-template-columns: 1fr;
+  }
+
+  .lobby {
+    grid-template-columns: 1fr;
+  }
+
+  .lobby .create,
+  .lobby > :not(.create) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .square {
+    font-size: 0.45rem;
+  }
+
+  .sq-icon {
+    font-size: 1.1em;
+  }
+
+  .token {
+    width: 8px;
+    height: 8px;
+    border-width: 1px;
+  }
+
+  .game-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ---------- waiting room: add/remove bots ---------- */
+
+.seat:has(.seat-add) {
+  padding: 0;
+}
+
+.seat-add {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: transparent;
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+}
+
+.seat-add:hover:not(:disabled) {
+  background: rgba(55, 200, 138, 0.1);
+}
+
+.seat-add-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.seat-remove {
+  float: right;
+  padding: 0 0.5rem;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.seat-remove:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text);
+}
