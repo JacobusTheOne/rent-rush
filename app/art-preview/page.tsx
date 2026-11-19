@@ -5,6 +5,7 @@ import { ALL_ART } from "@/game/art";
 import { FORTUNE_CARDS, newGame, type GameState } from "@/game/engine";
 import { useAvailableArt } from "@/lib/useArt";
 import { Board } from "@/components/Board";
+import { PlayerCards } from "@/components/PlayerCards";
 
 /**
  * Art preview: the board with a sample mid-game state, plus a checklist of every
@@ -35,6 +36,8 @@ function sampleState(dice: [number, number]): GameState {
     "23": { owner: "p4", level: 3 },
     "19": { owner: "p4", level: 1 },
   };
+  s.players[0].freeCards = 1;
+  s.phase = "END";
   s.dice = dice;
   s.jackpot = 225;
   s.round = 7;
@@ -73,7 +76,9 @@ export default function ArtPreview() {
         <div className="game-board">
           <Board state={state} />
         </div>
-        <aside className="panel art-list">
+        <aside className="sidebar">
+          <PlayerCards state={state} me="p1" busy={false} myTurn onAction={() => {}} />
+        <div className="panel art-list">
           <h3>Image files</h3>
           <ul>
             {ALL_ART.map((a) => (
@@ -89,6 +94,7 @@ export default function ArtPreview() {
               </li>
             ))}
           </ul>
+        </div>
         </aside>
       </div>
     </div>

@@ -1,23 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BOARD, DISTRICTS, RULES, upgradeCost } from "@/game/board";
+import { BOARD, RULES } from "@/game/board";
 import { TOKEN_ART } from "@/game/art";
+import { type Action, type GameState, netWorth } from "@/game/engine";
+import type { Game } from "@/lib/api";
 import { useAvailableArt } from "@/lib/useArt";
+import { Board } from "./Board";
+import { PlayerCards } from "./PlayerCards";
 import { Token } from "./Token";
 
 const TOKEN_SRCS = TOKEN_ART.map((a) => a.src);
-import {
-  type Action,
-  type GameState,
-  canSellProperty,
-  canUpgrade,
-  netWorth,
-  ownedBy,
-  rentFor,
-} from "@/game/engine";
-import type { Game } from "@/lib/api";
-import { Board } from "./Board";
 
 interface Props {
   game: Game;
@@ -57,9 +50,7 @@ export function GameScreen({ game, me, busy, error, onAction, onLeave, onExit }:
             <Waiting state={state} canSkip={!!mePlayer && !mePlayer.bankrupt} busy={busy} onAction={onAction} />
           )}
         </div>
-        {mePlayer && !mePlayer.bankrupt && (
-          <MyProperties state={state} me={me} busy={busy} myTurn={myTurn} onAction={onAction} />
-        )}
+        <PlayerCards state={state} me={me} busy={busy} myTurn={myTurn} onAction={onAction} />
         <Log state={state} />
         <div className="row">
           <button type="button" className="secondary" onClick={onExit}>
@@ -260,86 +251,6 @@ function GameOver({ state, onExit }: { state: GameState; onExit: () => void }) {
         Back to lobby
       </button>
     </>
-  );
-}
-
-function MyProperties({
-  state,
-  me,
-  busy,
-  myTurn,
-  onAction,
-}: {
-  state: GameState;
-  me: string;
-  busy: boolean;
-  myTurn: boolean;
-  onAction: (a: Action) => void;
-}) {
-  const owned = ownedBy(state, me);
-  const canManage = myTurn && state.phase !== "BUY";
-  const canBuild = myTurn && (state.phase === "ROLL" || state.phase === "END");
-  return (
-    <div className="panel">
-      <h3>Your properties</h3>
-      {owned.length === 0 ? (
-        <p className="muted small">None yet. Land on an unowned street or station to buy it.</p>
-      ) : (
-        <ul className="props">
-          {owned.map((i) => {
-            const sq = BOARD[i];
-            const level = state.holdings[i].level;
-            const color = sq.kind === "PROPERTY" ? DISTRICTS[sq.district].color : "#888";
-            return (
-              <li key={i}>
-                <span className="swatch" style={{ background: color }} />
-                <span className="pname">
-                  {sq.name}
-                  {level > 0 && <span className="pips"> {"▲".repeat(level)}</span>}
-                  <span className="muted small"> rent ${rentFor(state, i)}</span>
-                </span>
-                {canManage && (
-                  <span className="prop-actions">
-                    {sq.kind === "PROPERTY" && canBuild && !canUpgrade(state, me, i) && (
-                      <button type="button" className="tiny" disabled={busy} onClick={() => onAction({ type: "UPGRADE", square: i })}>
-                        ▲ ${upgradeCost(sq)}
-                      </button>
-                    )}
-                    {sq.kind === "PROPERTY" && level > 0 && (
-                      <button
-                        type="button"
-                        className="tiny secondary"
-                        disabled={busy}
-                        onClick={() => onAction({ type: "SELL_UPGRADE", square: i })}
-                      >
-                        ▼ +${upgradeCost(sq) * RULES.sellBackRate}
-                      </button>
-                    )}
-                    {!canSellProperty(state, me, i) && "price" in sq && (
-                      <button
-                        type="button"
-                        className="tiny secondary"
-                        disabled={busy}
-                        onClick={() => {
-                          if (confirm(`Sell ${sq.name} back to the bank for $${sq.price * RULES.sellBackRate}?`)) {
-                            onAction({ type: "SELL_PROPERTY", square: i });
-                          }
-                        }}
-                      >
-                        Sell +${sq.price * RULES.sellBackRate}
-                      </button>
-                    )}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {canBuild && owned.length > 0 && (
-        <p className="muted small">Own both streets of a district to double rent and unlock upgrades (▲).</p>
-      )}
-    </div>
   );
 }
 
