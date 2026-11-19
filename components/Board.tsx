@@ -93,6 +93,8 @@ export function Board({ state }: { state: GameState }) {
       })}
       <div className={`board-center ${hasCenter ? "has-art" : ""}`} style={bg(art, CENTER_ART.src)}>
         {!hasCenter && <div className="board-title">RENT RUSH</div>}
+        {/* With centre art, this becomes a panel at the bottom so the artwork's middle stays visible. */}
+        <div className="center-hud">
         <div className="center-info muted small">
           Round {Math.min(state.round, state.maxRounds)} of {state.maxRounds}
         </div>
@@ -118,6 +120,7 @@ export function Board({ state }: { state: GameState }) {
             <span>Fortune: {state.lastCard}</span>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

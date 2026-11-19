@@ -778,3 +778,32 @@ dialog.rules li {
 a.link {
   color: var(--accent);
 }
+
+/* Live info in the board centre: plain stack by default; with centre art, a panel at the
+   bottom (covers the lower part of the artwork, keeps its middle/logo visible). */
+.center-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.board-center.has-art {
+  justify-content: flex-end;
+  padding-bottom: 3%;
+}
+
+.board-center.has-art .center-hud {
+  width: 64%;
+  min-height: 36%;
+  justify-content: center;
+  padding: 0.6rem 0.75rem;
+  border-radius: 14px;
+  background: rgba(12, 18, 24, 0.86);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.board-center.has-art .center-hud .center-info,
+.board-center.has-art .center-hud .jackpot {
+  background: none;
+}

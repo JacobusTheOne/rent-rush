@@ -11,7 +11,8 @@
     "sandbox": "ampx sandbox --profile aws-project",
     "sandbox:once": "ampx sandbox --once --profile aws-project",
     "sandbox:delete": "ampx sandbox delete --profile aws-project",
-    "art:templates": "tsx scripts/print-art-spec.ts | python scripts/make-art-templates.py"
+    "art:templates": "tsx scripts/print-art-spec.ts | python scripts/make-art-templates.py",
+    "art:slice": "tsx scripts/print-art-spec.ts | python scripts/slice-board.py"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.15.7",

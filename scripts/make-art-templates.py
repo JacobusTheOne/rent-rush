@@ -126,8 +126,8 @@ def center(spec):
     centered(ImageDraw.Draw(title), (W // 2, 150), "RENT RUSH", font(210, bold=True), GOLD)
     title = title.rotate(8, expand=False, resample=Image.BICUBIC)
     img.paste(title, (0, int(H * 0.12)), title)
-    dashed_box(d, (W // 2 - 420, int(H * 0.3), W // 2 + 420, int(H * 0.78)),
-               "live info drawn here: round, dice, Jackpot, Fortune card", color="#6f8f84", dash=18, width=4, label_size=34)
+    dashed_box(d, (W // 2 - 480, int(H * 0.6), W // 2 + 480, int(H * 0.97)),
+               "live info panel: round, dice, Jackpot, Fortune card", color="#6f8f84", dash=18, width=4, label_size=34)
     size_note(d, spec, color="#6f8f84", size=30)
     return img
 
