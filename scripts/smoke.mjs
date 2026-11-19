@@ -9,7 +9,10 @@ import { readFileSync } from "node:fs";
 import { Amplify } from "aws-amplify";
 import { fetchAuthSession, signIn, signOut } from "aws-amplify/auth";
 
-const outputs = JSON.parse(readFileSync(new URL("../amplify_outputs.json", import.meta.url), "utf8"));
+// SMOKE_OUTPUTS=amplify_outputs.production.json targets production instead of the sandbox.
+const outputs = JSON.parse(
+  readFileSync(new URL(`../${process.env.SMOKE_OUTPUTS ?? "amplify_outputs.json"}`, import.meta.url), "utf8"),
+);
 Amplify.configure(outputs);
 const endpoint = outputs.data.url;
 const host = new URL(endpoint).host;

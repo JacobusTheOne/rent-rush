@@ -39,6 +39,22 @@ npm run typecheck
 
 To play multiplayer locally, open a second browser (or a private window) and sign up as another player.
 
+## Deploy (production)
+
+Live at **https://rent-rush-715.netlify.app**. Production uses its own backend (Amplify app
+`rent-rush`, branch `main`, us-east-2), separate from your sandbox.
+
+```bash
+npm run deploy                    # production backend (ampx pipeline-deploy) + build + Netlify
+npm run deploy -- --skip-backend  # frontend only
+```
+
+Deploys run from your machine (the AWS project blocks GitHub OIDC, and no long-lived AWS keys
+are stored in GitHub). The script builds against `amplify_outputs.production.json` and restores
+your sandbox `amplify_outputs.json` afterwards. Needs `aws login --profile aws-project` and the
+Netlify CLI logged in; the folder is linked to the `rent-rush-715` site. Security headers (CSP
+etc.) are in `netlify.toml`.
+
 ## Board art
 
 All board graphics (squares, centre, background, tokens, dice, Fortune card) are replaceable JPGs

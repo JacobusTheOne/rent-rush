@@ -13,7 +13,8 @@
     "sandbox:delete": "ampx sandbox delete --profile aws-project",
     "art:templates": "tsx scripts/print-art-spec.ts | python scripts/make-art-templates.py",
     "art:slice": "tsx scripts/print-art-spec.ts | python scripts/slice-board.py",
-    "art:tokens": "python scripts/slice-tokens.py"
+    "art:tokens": "python scripts/slice-tokens.py",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.15.7",
@@ -42,5 +43,10 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "config": {
+    "amplifyAppId": "d87bfel7lqeu0",
+    "awsProfile": "aws-project",
+    "awsRegion": "us-east-2"
   }
 }
