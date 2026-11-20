@@ -1,5 +1,5 @@
 import { randomInt, randomUUID } from "node:crypto";
-import type { AppSyncIdentityCognito, AppSyncResolverEvent } from "aws-lambda";
+import type { AppSyncIdentityCognito, AppSyncIdentityIAM, AppSyncResolverEvent } from "aws-lambda";
 import { ConditionalCheckFailedException, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DeleteCommand,
@@ -40,6 +40,24 @@ interface LobbyPlayer {
   id: string;
   name: string;
   bot?: boolean;
+  guest?: boolean;
+}
+
+/** Who is calling: a signed-in player (user pool) or a guest (anonymous identity-pool identity). */
+type Caller =
+  | { id: string; guest: false; user: AppSyncIdentityCognito }
+  | { id: string; guest: true; user: null };
+
+const GUEST_PREFIX = "guest:";
+
+function callerOf(event: GameEvent): Caller {
+  const identity = event.identity as (AppSyncIdentityCognito & Partial<AppSyncIdentityIAM>) | null;
+  if (identity?.sub) return { id: identity.sub, guest: false, user: identity };
+  // Guests come in through IAM with an unauthenticated Cognito identity; its id stays the same in that browser.
+  if (identity?.cognitoIdentityId && identity.cognitoIdentityAuthType === "unauthenticated") {
+    return { id: `${GUEST_PREFIX}${identity.cognitoIdentityId}`, guest: true, user: null };
+  }
+  throw new Error("Unauthorized");
 }
 
 const BOT_NAMES = ["Bot Penny", "Bot Rex", "Bot Ivy", "Bot Max", "Bot Lulu", "Bot Otto"];
@@ -66,9 +84,8 @@ type Args = Record<string, unknown>;
 type GameEvent = AppSyncResolverEvent<Args> & { fieldName?: string };
 
 export const handler = async (event: GameEvent) => {
-  const identity = event.identity as AppSyncIdentityCognito | null;
-  if (!identity?.sub) throw new Error("Unauthorized");
-  const me = identity.sub;
+  const caller = callerOf(event);
+  const me = caller.id;
   const args = event.arguments ?? {};
   const fieldName = event.fieldName ?? event.info?.fieldName;
 
@@ -79,9 +96,9 @@ export const handler = async (event: GameEvent) => {
       case "getGame":
         return view(await load(str(args.gameId, "gameId")));
       case "createGame":
-        return await createGame(identity, args);
+        return await createGame(caller, args);
       case "joinGame":
-        return await joinGame(identity, str(args.gameId, "gameId"));
+        return await joinGame(caller, str(args.gameId, "gameId"), args.playerName);
       case "leaveGame":
         return await leaveGame(me, str(args.gameId, "gameId"));
       case "startGame":
@@ -114,7 +131,7 @@ async function listLobby(me: string) {
   return [...waiting, ...playing.filter(mine), ...finished.filter(mine)].map((g) => view(g));
 }
 
-async function createGame(identity: AppSyncIdentityCognito, args: Args) {
+async function createGame(caller: Caller, args: Args) {
   const name = str(args.name, "name").trim().slice(0, 40);
   if (!name) throw new Error("Give the game a name");
   const maxPlayers = Number(args.maxPlayers);
@@ -126,7 +143,7 @@ async function createGame(identity: AppSyncIdentityCognito, args: Args) {
     throw new Error(`Rounds must be one of ${RULES.roundOptions.join(", ")}`);
   }
   const waiting = await byStatus("WAITING");
-  if (waiting.some((g) => g.hostId === identity.sub)) {
+  if (waiting.some((g) => g.hostId === caller.id)) {
     throw new Error("You are already hosting an open game");
   }
 
@@ -135,10 +152,10 @@ async function createGame(identity: AppSyncIdentityCognito, args: Args) {
     gameId: randomUUID(),
     name,
     status: "WAITING",
-    hostId: identity.sub,
+    hostId: caller.id,
     maxPlayers,
     maxRounds,
-    players: [{ id: identity.sub, name: await playerName(identity) }],
+    players: [await seat(caller, args.playerName, [])],
     state: null,
     version: 1,
     createdAt: now,
@@ -151,12 +168,12 @@ async function createGame(identity: AppSyncIdentityCognito, args: Args) {
   return view(item);
 }
 
-async function joinGame(identity: AppSyncIdentityCognito, gameId: string) {
+async function joinGame(caller: Caller, gameId: string, guestName: unknown) {
   const game = await load(gameId);
-  if (game.players.some((p) => p.id === identity.sub)) return view(game);
+  if (game.players.some((p) => p.id === caller.id)) return view(game);
   if (game.status !== "WAITING") throw new Error("That game has already started");
   if (game.players.length >= game.maxPlayers) throw new Error("That game is full");
-  const next = { ...game, players: [...game.players, { id: identity.sub, name: await playerName(identity) }] };
+  const next = { ...game, players: [...game.players, await seat(caller, guestName, game.players)] };
   return view(await save(game, next));
 }
 
@@ -315,6 +332,29 @@ function ttl(status: Status, now: number) {
 const nameCache = new Map<string, string>();
 
 /** Public name from Cognito (never the email address). */
+/** The lobby entry for the caller: account name for signed-in players, a cleaned-up chosen name for guests. */
+async function seat(caller: Caller, guestName: unknown, others: LobbyPlayer[]): Promise<LobbyPlayer> {
+  if (!caller.guest) return { id: caller.id, name: await playerName(caller.user) };
+  return { id: caller.id, name: uniqueName(cleanGuestName(guestName), others), guest: true };
+}
+
+/** Guests pick any name: keep it short and printable, and don't let it pose as a bot. */
+function cleanGuestName(raw: unknown): string {
+  const name = (typeof raw === "string" ? raw : "")
+    .replace(/[\u0000-\u001f\u007f<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 20);
+  if (name.length < 2 || /^bot\b/i.test(name)) return "Guest";
+  return name;
+}
+
+function uniqueName(name: string, others: LobbyPlayer[]): string {
+  const taken = new Set(others.map((p) => p.name.toLowerCase()));
+  if (!taken.has(name.toLowerCase())) return name;
+  for (let n = 2; ; n++) if (!taken.has(`${name} ${n}`.toLowerCase())) return `${name} ${n}`;
+}
+
 async function playerName(identity: AppSyncIdentityCognito): Promise<string> {
   const claimed = identity.claims?.preferred_username;
   if (typeof claimed === "string" && claimed) return claimed.slice(0, 24);

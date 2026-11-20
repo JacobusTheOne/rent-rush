@@ -2093,3 +2093,64 @@ dialog.card-stage::backdrop {
     display: none;
   }
 }
+
+/* ---------- guest entry on the sign-in screen ---------- */
+
+.guest-entry {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0 2rem 1.5rem;
+}
+
+.guest-entry label {
+  font-weight: 600;
+}
+
+.guest-entry .row {
+  flex-wrap: nowrap;
+}
+
+.guest-entry input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.guest-entry p {
+  margin: 0;
+}
+
+.guest-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.guest-divider::before,
+.guest-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+@media (max-width: 520px) {
+  .guest-entry {
+    padding: 0 1rem 1.25rem;
+  }
+
+  .guest-entry .row {
+    flex-wrap: wrap;
+  }
+
+  .guest-entry button {
+    width: 100%;
+  }
+}

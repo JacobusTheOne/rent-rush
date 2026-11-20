@@ -30,6 +30,8 @@ export interface PlayerState {
   bankrupt: boolean;
   /** Computer-controlled player; its moves come from chooseBotAction(). */
   bot?: boolean;
+  /** Playing without an account (anonymous guest identity). */
+  guest?: boolean;
 }
 
 export interface Holding {
@@ -117,7 +119,7 @@ const MAX_LOG = 40;
 // ---------------------------------------------------------------- setup
 
 export function newGame(
-  players: { id: string; name: string; bot?: boolean | null }[],
+  players: { id: string; name: string; bot?: boolean | null; guest?: boolean | null }[],
   maxRounds: number,
   ctx: Ctx,
 ): GameState {
@@ -139,6 +141,7 @@ export function newGame(
       freeCards: 0,
       bankrupt: false,
       ...(p.bot ? { bot: true } : {}),
+      ...(p.guest ? { guest: true } : {}),
     })),
     current: 0,
     phase: "ROLL",

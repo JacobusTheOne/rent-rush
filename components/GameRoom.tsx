@@ -146,6 +146,7 @@ export function GameRoom({ gameId, me, onExit }: Props) {
                   {p.bot && <span aria-hidden>🤖 </span>}
                   {p.name}
                   {p.bot && <span className="badge">bot</span>}
+                  {p.guest && <span className="badge">guest</span>}
                   {p.id === game.hostId && <span className="badge">host</span>}
                   {p.id === me && <span className="badge you">you</span>}
                   {p.bot && isHost && (

@@ -35,6 +35,7 @@ export function Nameplate({ state, player, me }: { state: GameState; player: Pla
           {player.name}
           {player.id === me && <span className="badge you">you</span>}
           {player.bot && <span className="badge">🤖</span>}
+          {player.guest && <span className="badge">guest</span>}
           {player.inCell && <span className="badge">in cell</span>}
         </span>
         <span className="muted small">
