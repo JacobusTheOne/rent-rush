@@ -92,7 +92,7 @@ export function CardFan({ state, owner, items, variant = "hand", className = "",
         // A vertical stack shows the top of each card (district band and name).
         style={
           variant === "column"
-            ? { gridTemplateRows: n > 1 ? `repeat(${n - 1}, var(--step)) auto` : "auto" }
+            ? { gridTemplateRows: n > 1 ? `repeat(${n - 1}, minmax(0, var(--step))) auto` : "auto" }
             : {
                 gridTemplateColumns:
                   n > 1

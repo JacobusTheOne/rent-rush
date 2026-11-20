@@ -29,13 +29,29 @@ function clock(at: number) {
 }
 
 /**
- * Table chat: a floating button (with an unread count) that opens a small chat window.
- * While it's closed, a new message pops up briefly as a preview.
+ * Table chat. Floating (phones): a button with an unread count opens a small chat window, and
+ * a new message pops up briefly while it's closed. Docked (wide screens): the window fills its
+ * spot in the side panel; `hidden` means another tab is showing, and `onUnread` reports the count.
  */
-export function Chat({ state, me, onSend }: { state: GameState; me: string; onSend: (text: string) => Promise<void> }) {
+export function Chat({
+  state,
+  me,
+  onSend,
+  docked = false,
+  hidden = false,
+  onUnread,
+}: {
+  state: GameState;
+  me: string;
+  onSend: (text: string) => Promise<void>;
+  docked?: boolean;
+  hidden?: boolean;
+  onUnread?: (count: number) => void;
+}) {
   const messages = state.chat ?? [];
   const lastId = messages.at(-1)?.id ?? 0;
-  const [open, setOpen] = useState(false);
+  const [floatingOpen, setOpen] = useState(false);
+  const open = docked ? !hidden : floatingOpen;
   // Messages up to this id have been seen (old messages don't count as unread when you arrive).
   const [seen, setSeen] = useState(lastId);
   const [preview, setPreview] = useState<ChatMessage | null>(null);
@@ -54,6 +70,7 @@ export function Chat({ state, me, onSend }: { state: GameState; me: string; onSe
 
   // Remember whether the window was open (after mount, so the server render matches).
   useEffect(() => setOpen(readOpen()), []);
+  useEffect(() => onUnread?.(open ? 0 : messages.filter((m) => m.id > seen && m.from !== me).length));
 
   // Open: everything is read, and the newest message is in view.
   useEffect(() => {
@@ -66,7 +83,7 @@ export function Chat({ state, me, onSend }: { state: GameState; me: string; onSe
 
   // Closed: show someone else's new message for a few seconds.
   useEffect(() => {
-    if (open) return;
+    if (open || docked) return;
     const newest = messages.at(-1);
     if (!newest || newest.id <= seen || newest.from === me) return;
     setPreview(newest);
@@ -98,16 +115,20 @@ export function Chat({ state, me, onSend }: { state: GameState; me: string; onSe
     }
   };
 
+  if (docked && hidden) return null;
+
   return (
-    <div className={`chat ${open ? "open" : ""}`}>
+    <div className={`chat ${open ? "open" : ""} ${docked ? "docked" : ""}`}>
       {open && (
         <section className="chat-window" aria-label="Table chat">
-          <header className="chat-head">
-            <strong>💬 Table chat</strong>
-            <button type="button" className="secondary tiny" aria-label="Close chat" onClick={() => toggle(false)}>
-              ✕
-            </button>
-          </header>
+          {!docked && (
+            <header className="chat-head">
+              <strong>💬 Table chat</strong>
+              <button type="button" className="secondary tiny" aria-label="Close chat" onClick={() => toggle(false)}>
+                ✕
+              </button>
+            </header>
+          )}
           <ol ref={list} className="chat-list" aria-live="polite">
             {messages.length === 0 && <li className="muted small chat-empty">No messages yet. Say hi!</li>}
             {messages.map((m) => (
@@ -150,7 +171,7 @@ export function Chat({ state, me, onSend }: { state: GameState; me: string; onSe
         </section>
       )}
 
-      {!open && preview && (
+      {!docked && !open && preview && (
         <button type="button" className="chat-preview" onClick={() => toggle(true)}>
           <span className="chat-name" style={{ color: color(preview.from) }}>
             {preview.name}
@@ -159,6 +180,7 @@ export function Chat({ state, me, onSend }: { state: GameState; me: string; onSe
         </button>
       )}
 
+      {!docked && (
       <button
         type="button"
         className="chat-toggle"
@@ -169,6 +191,7 @@ export function Chat({ state, me, onSend }: { state: GameState; me: string; onSe
         💬
         {unread > 0 && <span className="count-badge">{unread > 9 ? "9+" : unread}</span>}
       </button>
+      )}
     </div>
   );
 }

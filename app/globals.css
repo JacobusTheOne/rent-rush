@@ -2699,3 +2699,358 @@ dialog.trade-dialog::backdrop {
     animation: none;
   }
 }
+
+/* ---------- one screen (wide screens): the whole table fits in the window ----------
+   Columns: left seat | board | right seat | side panel (menu + chat).
+   Rows:    top seat (cards, then name) | board | your name and cards.
+   The board is a square as big as both the height and the width allow. */
+
+.app:has(.one-screen) {
+  max-width: none;
+  padding: 0 12px;
+}
+
+/* The side panel has Lobby; Rules and sign-out are in the lobby. */
+.app:has(.one-screen) .site-header {
+  display: none;
+}
+
+.one-screen .table {
+  --gap: 10px;
+  /* Top and bottom hands: small cards, sized to the window height. */
+  --hand-card: clamp(50px, 7.2dvh, 88px);
+  --plate: 46px;
+  /* + room for the fan's tilted end cards */
+  --row-h: calc(var(--hand-card) * 1.34 + var(--plate) + 26px);
+  --top-h: var(--row-h);
+  /* Side seats: a column of cards plus the sideways name tag. */
+  --side-card: clamp(92px, 7.5vw, 132px);
+  --side: calc(var(--side-card) + var(--plate) + 8px);
+  --sidebar: clamp(250px, 19vw, 340px);
+  --board: max(
+    340px,
+    min(
+      calc(100dvh - var(--top-h) - var(--row-h) - 2 * var(--gap) - 16px),
+      calc(100vw - 24px - 2 * var(--side) - var(--sidebar) - 4 * var(--gap))
+    )
+  );
+  height: 100dvh;
+  padding: 8px 0;
+  box-sizing: border-box;
+  grid-template-columns: var(--side) var(--board) var(--side) var(--sidebar);
+  grid-template-rows: var(--top-h) var(--board) var(--row-h);
+  grid-template-areas:
+    "left  top   right side"
+    "left  board right side"
+    "me    me    me    side";
+  gap: var(--gap);
+  align-items: stretch;
+  align-content: center;
+  justify-content: center;
+}
+
+/* Two opponents sit left and right: no top row. */
+.one-screen .table.seats-2 {
+  --top-h: 0px;
+}
+
+.one-screen .seat-left,
+.one-screen .seat-right {
+  grid-row: 2;
+}
+
+.one-screen .table-board {
+  width: var(--board);
+  height: var(--board);
+  align-self: center;
+}
+
+/* Compact name tags. */
+.one-screen .nameplate {
+  padding: 0.2rem 0.55rem;
+  gap: 0 0.45rem;
+}
+
+.one-screen .nameplate .token.has-art {
+  width: 28px;
+  height: 28px;
+}
+
+.one-screen .nameplate .cash {
+  font-size: 1rem;
+}
+
+/* Top seat: cards along the top edge, the name just below them (next to the board). */
+.one-screen .seat-top {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
+  min-height: 0;
+}
+
+.one-screen .seat-top .nameplate,
+.one-screen .table-me > .nameplate {
+  min-width: 240px;
+  max-width: min(100%, 360px);
+}
+
+.one-screen .fan.row {
+  --card: var(--hand-card);
+  --step: calc(var(--hand-card) * 0.45);
+  padding: 0 8px;
+}
+
+/* Your seat: name just below the board, then your cards. */
+.one-screen .table-me {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 0;
+  margin: 0;
+}
+
+.one-screen .table-me > .my-hand {
+  width: auto;
+  margin: 0;
+}
+
+.one-screen .table-me .fan.row {
+  padding: 0 8px;
+}
+
+.one-screen .table-me > .my-hand.empty {
+  max-width: 420px;
+  text-align: center;
+}
+
+/* Side seats: a column of cards on the outside, the name tag sideways next to the board. */
+.one-screen .seat-left,
+.one-screen .seat-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  height: var(--board);
+  align-self: center;
+}
+
+.one-screen .seat-left {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.one-screen .seat-right {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.one-screen .seat-left .nameplate,
+.one-screen .seat-right .nameplate {
+  writing-mode: vertical-rl;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  width: var(--plate);
+  max-height: 100%;
+  padding: 0.55rem 0.2rem;
+  flex: 0 0 auto;
+}
+
+/* Left name tag reads bottom-to-top, facing the board. */
+.one-screen .seat-left .nameplate {
+  transform: rotate(180deg);
+}
+
+.one-screen .seat-left .nameplate .cash,
+.one-screen .seat-right .nameplate .cash {
+  grid-column: auto;
+}
+
+.one-screen .seat-left .nameplate .pname,
+.one-screen .seat-right .nameplate .pname {
+  max-height: 14em;
+}
+
+.one-screen .seat-left .nameplate .token,
+.one-screen .seat-right .nameplate .token {
+  writing-mode: horizontal-tb;
+}
+
+.one-screen .seat-left .nameplate .turn-tag {
+  top: auto;
+  bottom: -0.55rem;
+}
+
+.one-screen .fan.column {
+  --step: calc(var(--side-card) * 0.42);
+  width: var(--side-card);
+  max-height: 100%;
+  flex: 0 0 auto;
+}
+
+.one-screen .seat-left .seat-empty,
+.one-screen .seat-right .seat-empty {
+  width: var(--side-card);
+}
+
+/* Side panel: menu buttons, trade offers, then the chat filling the rest. */
+.table-side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  min-width: 0;
+}
+
+.table-side .game-name {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.side-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.side-buttons button {
+  padding: 0.55rem 0.5rem;
+}
+
+.table-side .trade-offers {
+  max-height: 34%;
+  overflow-y: auto;
+  padding: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.side-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.side-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--border);
+}
+
+.side-tabs button {
+  position: relative;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.55rem;
+  border-bottom: 2px solid transparent;
+}
+
+.side-tabs button[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.side-tabs button:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.side-tabs .count-badge {
+  position: static;
+  display: inline-block;
+  margin-left: 0.35rem;
+  vertical-align: 1px;
+}
+
+.chat.docked {
+  position: static;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  pointer-events: auto;
+}
+
+.chat.docked .chat-window {
+  width: auto;
+  height: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.side-log {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.6rem 0.8rem 0.6rem 2.2rem;
+  font-size: 0.85rem;
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+}
+
+/* The board centre is smaller now: keep the turn panel compact. */
+.one-screen .overlay-hud {
+  width: 86%;
+  max-height: 74%;
+  margin-bottom: 3%;
+  padding: 0.45rem 0.6rem;
+  gap: 0.3rem;
+  font-size: 0.88rem;
+}
+
+.one-screen .overlay-hud .card {
+  padding: 0.3rem 0.6rem;
+}
+
+.one-screen .overlay-hud p {
+  margin: 0.2rem 0;
+}
+
+.one-screen .overlay-hud .row {
+  justify-content: center;
+}
+
+/* Small board (short windows): drop the Fortune card picture from the centre panel so the
+   turn buttons fit; its text still shows as the last event below them. */
+.one-screen .table-board {
+  container-type: inline-size;
+}
+
+@container (max-width: 560px) {
+  .overlay-hud .card {
+    display: none;
+  }
+
+  .overlay-hud {
+    width: 98%;
+    font-size: 0.8rem;
+  }
+
+  .overlay-hud .row {
+    gap: 0.3rem;
+  }
+
+  .overlay-hud button {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.82rem;
+  }
+
+  .overlay-hud .cup-hint {
+    font-size: 0.65rem;
+  }
+}

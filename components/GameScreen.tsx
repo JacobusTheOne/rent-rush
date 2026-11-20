@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { BOARD, RULES } from "@/game/board";
 import { type Action, type GameState, netWorth } from "@/game/engine";
 import type { Game } from "@/lib/api";
@@ -57,6 +57,49 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
   // Wide screens: turn controls sit in the board's centre so the board can be big.
   const wide = useMediaQuery("(min-width: 1001px)");
 
+  const tradeButton = canTrade && (
+    <button
+      type="button"
+      className="secondary trade-button"
+      title="Offer a trade: cards and cash for another player's cards and cash"
+      onClick={() => setTradeOpen(true)}
+    >
+      🤝 Trade
+      {incomingTrades > 0 && <span className="count-badge" aria-label={`${incomingTrades} offers for you`}>{incomingTrades}</span>}
+    </button>
+  );
+  // On the one-screen layout, Trade sits in the board centre beside Roll / Buy.
+  const extra = wide ? tradeButton || null : null;
+
+  const lobbyButton = (
+    <button type="button" className="secondary" onClick={onExit}>
+      Lobby
+    </button>
+  );
+  const pauseButton = canPause && !paused && (
+    <button
+      type="button"
+      className="secondary"
+      disabled={requestBusy}
+      title="Pause the game for everyone; anyone can resume it later"
+      onClick={() => onAction({ type: "PAUSE" })}
+    >
+      ⏸ Pause
+    </button>
+  );
+  const forfeitButton = mePlayer && !mePlayer.bankrupt && state.phase !== "OVER" && (
+    <button
+      type="button"
+      className="danger"
+      disabled={busy}
+      onClick={() => {
+        if (confirm("Leave the game? You'll forfeit and your properties go back to the bank.")) onLeave();
+      }}
+    >
+      Forfeit
+    </button>
+  );
+
   const turnPanel = (
     <>
       {error && (
@@ -70,9 +113,9 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
         ) : paused ? (
           <Paused paused={paused} canResume={canPause} busy={requestBusy} onAction={onAction} />
         ) : myTurn ? (
-          <MyTurn state={state} busy={busy} onAction={act} />
+          <MyTurn state={state} busy={busy} onAction={act} extra={extra} />
         ) : (
-          <Waiting state={state} canSkip={!!mePlayer && !mePlayer.bankrupt} busy={busy} onAction={onAction} />
+          <Waiting state={state} canSkip={!!mePlayer && !mePlayer.bankrupt} busy={busy} onAction={onAction} extra={extra} />
         )}
         {lastEvent && state.phase !== "OVER" && <p className="last-event muted small">{lastEvent}</p>}
       </div>
@@ -80,51 +123,20 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
   );
 
   return (
-    <div className="table-view">
+    <div className={`table-view ${wide ? "one-screen" : ""}`}>
       <div className={`table seats-${others.length}`}>
-        <div className="table-bar">
-          <h2 className="game-name">{game.name}</h2>
-          <div className="row">
-            <button type="button" className="secondary" onClick={onExit}>
-              Lobby
-            </button>
-            <SoundToggle />
-            {canTrade && (
-              <button
-                type="button"
-                className="secondary trade-button"
-                title="Offer a trade: cards and cash for another player's cards and cash"
-                onClick={() => setTradeOpen(true)}
-              >
-                🤝 Trade
-                {incomingTrades > 0 && <span className="count-badge" aria-label={`${incomingTrades} offers for you`}>{incomingTrades}</span>}
-              </button>
-            )}
-            {canPause && !paused && (
-              <button
-                type="button"
-                className="secondary"
-                disabled={requestBusy}
-                title="Pause the game for everyone; anyone can resume it later"
-                onClick={() => onAction({ type: "PAUSE" })}
-              >
-                ⏸ Pause
-              </button>
-            )}
-            {mePlayer && !mePlayer.bankrupt && state.phase !== "OVER" && (
-              <button
-                type="button"
-                className="danger"
-                disabled={busy}
-                onClick={() => {
-                  if (confirm("Leave the game? You'll forfeit and your properties go back to the bank.")) onLeave();
-                }}
-              >
-                Forfeit
-              </button>
-            )}
+        {!wide && (
+          <div className="table-bar">
+            <h2 className="game-name">{game.name}</h2>
+            <div className="row">
+              {lobbyButton}
+              <SoundToggle />
+              {tradeButton}
+              {pauseButton}
+              {forfeitButton}
+            </div>
           </div>
-        </div>
+        )}
         {others.map(({ player, position }) => (
           <OpponentSeat
             key={player.id}
@@ -132,6 +144,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
             player={player}
             position={position}
             me={me}
+            column={wide && position !== "top"}
           />
         ))}
         <div className="table-board">
@@ -159,15 +172,32 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
         </div>
         <section className="table-me" aria-label="Your seat">
           {!wide && <div className="panel me-turn">{turnPanel}</div>}
-          <TradeOffers state={state} me={me} busy={requestBusy} onAction={onAction} />
+          {!wide && <TradeOffers state={state} me={me} busy={requestBusy} onAction={onAction} />}
           {/* Your name and money sit centred just above your cards. */}
           <Nameplate state={state} player={bottom} me={me} />
           <MyHand state={state} player={bottom} me={me} busy={busy} myTurn={myTurn} onAction={onAction} />
         </section>
+        {wide && (
+          <aside className="table-side" aria-label="Game menu and chat">
+            <h2 className="game-name">{game.name}</h2>
+            <div className="side-buttons">
+              {lobbyButton}
+              <SoundToggle />
+              {forfeitButton}
+              {pauseButton}
+            </div>
+            <TradeOffers state={state} me={me} busy={requestBusy} onAction={onAction} />
+            <SidePanel state={state} me={me} onChat={onChat} />
+          </aside>
+        )}
       </div>
 
-      <Log state={state} />
-      <Chat state={state} me={me} onSend={onChat} />
+      {!wide && (
+        <>
+          <Log state={state} />
+          <Chat state={state} me={me} onSend={onChat} />
+        </>
+      )}
       {canTrade && (
         <TradeDialog
           state={state}
@@ -203,7 +233,7 @@ function SoundToggle() {
   );
 }
 
-function MyTurn({ state, busy, onAction }: { state: GameState; busy: boolean; onAction: (a: Action) => void }) {
+function MyTurn({ state, busy, onAction, extra }: { state: GameState; busy: boolean; onAction: (a: Action) => void; extra?: ReactNode }) {
   const p = state.players[state.current];
   switch (state.phase) {
     case "ROLL":
@@ -218,6 +248,7 @@ function MyTurn({ state, busy, onAction }: { state: GameState; busy: boolean; on
                 : "Roll the dice."}
           </p>
           <div className="row">
+            {extra}
             <button type="button" disabled={busy} onClick={() => onAction({ type: "ROLL" })}>
               🎲 Roll dice
             </button>
@@ -250,6 +281,7 @@ function MyTurn({ state, busy, onAction }: { state: GameState; busy: boolean; on
             <span className="muted small">No auctions in Rent Rush: if you pass, it stays unowned.</span>
           </p>
           <div className="row">
+            {extra}
             <button type="button" disabled={busy || p.cash < price} onClick={() => onAction({ type: "BUY" })}>
               Buy for ${price}
             </button>
@@ -269,6 +301,7 @@ function MyTurn({ state, busy, onAction }: { state: GameState; busy: boolean; on
             below to raise cash.
           </p>
           <div className="row">
+            {extra}
             <button
               type="button"
               disabled={busy || p.cash < debt.amount}
@@ -293,10 +326,13 @@ function MyTurn({ state, busy, onAction }: { state: GameState; busy: boolean; on
     case "END":
       return (
         <>
-          <p>Upgrade or sell properties below if you like, then end your turn.</p>
-          <button type="button" disabled={busy} onClick={() => onAction({ type: "END_TURN" })}>
-            End turn
-          </button>
+          <p>Upgrade or sell your properties if you like (click a card), then end your turn.</p>
+          <div className="row">
+            {extra}
+            <button type="button" disabled={busy} onClick={() => onAction({ type: "END_TURN" })}>
+              End turn
+            </button>
+          </div>
         </>
       );
     default:
@@ -309,11 +345,13 @@ function Waiting({
   canSkip,
   busy,
   onAction,
+  extra,
 }: {
   state: GameState;
   canSkip: boolean;
   busy: boolean;
   onAction: (a: Action) => void;
+  extra?: ReactNode;
 }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -329,10 +367,15 @@ function Waiting({
         {current.bot ? "🤖 " : ""}Waiting for <strong>{current.name}</strong>
         {state.phase === "BUY" ? " to decide on a purchase" : state.phase === "DEBT" ? " to settle a debt" : ""}…
       </p>
-      {canSkip && idle && !current.bot && (
-        <button type="button" className="secondary" disabled={busy} onClick={() => onAction({ type: "SKIP_IDLE" })}>
-          Skip idle player
-        </button>
+      {(extra || (canSkip && idle && !current.bot)) && (
+        <div className="row">
+          {extra}
+          {canSkip && idle && !current.bot && (
+            <button type="button" className="secondary" disabled={busy} onClick={() => onAction({ type: "SKIP_IDLE" })}>
+              Skip idle player
+            </button>
+          )}
+        </div>
       )}
     </>
   );
@@ -391,6 +434,33 @@ function GameOver({ state, onLeave, onExit }: { state: GameState; onLeave: () =>
         </button>
       </div>
     </>
+  );
+}
+
+/** Wide screens: chat and game log share the side panel, one tab at a time. */
+function SidePanel({ state, me, onChat }: { state: GameState; me: string; onChat: (text: string) => Promise<void> }) {
+  const [tab, setTab] = useState<"chat" | "log">("chat");
+  const [unread, setUnread] = useState(0);
+  return (
+    <section className="side-panel">
+      <div className="side-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={tab === "chat"} onClick={() => setTab("chat")}>
+          💬 Chat
+          {unread > 0 && <span className="count-badge">{unread > 9 ? "9+" : unread}</span>}
+        </button>
+        <button type="button" role="tab" aria-selected={tab === "log"} onClick={() => setTab("log")}>
+          📜 Log
+        </button>
+      </div>
+      <Chat state={state} me={me} onSend={onChat} docked hidden={tab !== "chat"} onUnread={setUnread} />
+      {tab === "log" && (
+        <ol className="side-log" reversed>
+          {[...state.log].reverse().map((e) => (
+            <li key={e.n}>{e.text}</li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
 

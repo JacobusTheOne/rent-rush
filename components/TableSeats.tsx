@@ -54,11 +54,14 @@ export function OpponentSeat({
   player,
   position,
   me,
+  column = false,
 }: {
   state: GameState;
   player: PlayerState;
   position: SeatPosition;
   me: string;
+  /** Side seats on the one-screen layout: cards stacked down the side of the board. */
+  column?: boolean;
 }) {
   const art = useAvailableArt(ART_SRCS);
   const owned = ownedBy(state, player.id);
@@ -78,7 +81,7 @@ export function OpponentSeat({
           owner={player.id}
           ownerName={player.name}
           items={items}
-          variant="row"
+          variant={column ? "column" : "row"}
           className={`side-${position}`}
           canManage={false}
           canBuild={false}
