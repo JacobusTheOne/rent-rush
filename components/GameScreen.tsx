@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BOARD, RULES } from "@/game/board";
 import { type Action, type GameState, netWorth } from "@/game/engine";
 import type { Game } from "@/lib/api";
 import { useBoardAnimation } from "@/lib/useBoardAnimation";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { isMuted, onMutedChange, setMuted } from "@/lib/sound";
-import { Board } from "./Board";
+import { Board, CenterHud } from "./Board";
+import { BoardViewport } from "./BoardViewport";
+import { DiceCup, type DiceCupHandle } from "./DiceCup";
 import { MyHand, Nameplate, OpponentSeat, seatOrder } from "./TableSeats";
 
 interface Props {
@@ -28,6 +30,16 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
   const current = state.players[state.current];
   const mePlayer = state.players.find((p) => p.id === me);
   const myTurn = current.id === me && state.phase !== "OVER";
+  const canRoll = myTurn && state.phase === "ROLL" && !busy;
+
+  // 3D dice cup; falls back to the flat dice if the browser can't do 3D.
+  const cup = useRef<DiceCupHandle>(null);
+  const [cupFailed, setCupFailed] = useState(false);
+  const act = (a: Action) => {
+    // The Roll button shakes and flips the cup, which then sends the roll.
+    if (a.type === "ROLL" && cup.current && !cupFailed) cup.current.autoRoll();
+    else onAction(a);
+  };
 
   const { bottom, others } = seatOrder(state, me);
   const lastEvent = state.log.at(-1)?.text;
@@ -45,7 +57,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
         {state.phase === "OVER" ? (
           <GameOver state={state} onExit={onExit} />
         ) : myTurn ? (
-          <MyTurn state={state} busy={busy} onAction={onAction} />
+          <MyTurn state={state} busy={busy} onAction={act} />
         ) : (
           <Waiting state={state} canSkip={!!mePlayer && !mePlayer.bankrupt} busy={busy} onAction={onAction} />
         )}
@@ -89,9 +101,27 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
           />
         ))}
         <div className="table-board">
-          <Board state={state} view={view}>
-            {wide ? turnPanel : null}
-          </Board>
+          <BoardViewport
+            follow={view.moving ? view.positions[view.moving] : null}
+            overlay={
+              <>
+                {!cupFailed && (
+                  <DiceCup
+                    ref={cup}
+                    state={state}
+                    canRoll={canRoll}
+                    onRoll={() => onAction({ type: "ROLL" })}
+                    onUnavailable={() => setCupFailed(true)}
+                  />
+                )}
+                <CenterHud state={state} view={view} showDice={cupFailed} className="overlay-hud">
+                  {wide ? turnPanel : null}
+                </CenterHud>
+              </>
+            }
+          >
+            <Board state={state} view={view} hud={false} />
+          </BoardViewport>
         </div>
         <section className="table-me" aria-label="Your seat">
           <div className="me-panel">

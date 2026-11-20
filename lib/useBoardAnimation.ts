@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BOARD_SIZE } from "@/game/board";
 import type { GameState, Move } from "@/game/engine";
+import { cupIsActive, waitForReveal } from "./diceEvents";
 import { initSound, playSound } from "./sound";
 
 /** What the board should show right now (may lag the real state while animating). */
@@ -16,6 +17,8 @@ export interface BoardView {
 }
 
 const TUMBLE_MS = 700;
+/** Shake + flip + reveal of the 3D dice cup for a roll that arrives from the server. */
+export const CUP_ROLL_MS = 1900;
 const TUMBLE_FRAME_MS = 80;
 const STEP_MS = 200;
 /** Faster steps when updates pile up (e.g. a bot's quick doubles). */
@@ -33,7 +36,7 @@ function prefersReducedMotion() {
 export function animationMs(s: GameState): number {
   const moves = s.lastMoves ?? [];
   if (!moves.length) return 0;
-  return TUMBLE_MS + moves.reduce((ms, m) => ms + (m.steps ? Math.abs(m.steps) * STEP_MS : JUMP_MS), 0);
+  return (cupIsActive() ? CUP_ROLL_MS : TUMBLE_MS) + moves.reduce((ms, m) => ms + (m.steps ? Math.abs(m.steps) * STEP_MS : JUMP_MS), 0);
 }
 
 /**
@@ -79,12 +82,13 @@ export function useBoardAnimation(state: GameState): BoardView {
       });
 
     if ((!newRoll && !newMove) || prefersReducedMotion()) {
-      if (newRoll && state.dice) playSound("dice");
+      if (newRoll && state.dice && !cupIsActive()) playSound("dice");
       if (pending.current === 0) syncToLatest(); // otherwise the running queue syncs at its end
       return;
     }
 
     const dice = state.dice;
+    const rollSeq = state.rollSeq ?? 0;
     const moves: Move[] = newMove ? (state.lastMoves ?? []) : [];
     pending.current += 1;
     setView((v) => ({ ...v, animating: true }));
@@ -93,7 +97,10 @@ export function useBoardAnimation(state: GameState): BoardView {
       const update = (patch: Partial<BoardView>) => alive.current && setView((v) => ({ ...v, ...patch }));
       const stepMs = () => (pending.current > 1 ? CATCH_UP_STEP_MS : STEP_MS);
 
-      if (newRoll && dice && pending.current === 1) {
+      if (newRoll && dice && cupIsActive()) {
+        // The 3D cup shows this roll; pieces start moving once it has revealed the dice.
+        await waitForReveal(rollSeq);
+      } else if (newRoll && dice && pending.current === 1) {
         if (alive.current) playSound("dice");
         for (let t = 0; t < TUMBLE_MS; t += TUMBLE_FRAME_MS) {
           update({

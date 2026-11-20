@@ -1856,3 +1856,185 @@ dialog.card-stage::backdrop {
     transform: translateY(4px) rotate(0deg) scale(1.6);
   }
 }
+
+/* ---------- board viewport: zoom & pan, with a fixed overlay for the dice cup + HUD ---------- */
+
+.board-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--radius);
+  /* Let the page scroll vertically with one finger; pinch is handled here. */
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.board-viewport.zoomed {
+  touch-action: none;
+  cursor: grab;
+}
+
+.board-viewport.dragging {
+  cursor: grabbing;
+}
+
+.board-zoom {
+  transform-origin: 0 0;
+  transition: transform 0.25s ease;
+  will-change: transform;
+}
+
+.board-viewport.dragging .board-zoom {
+  transition: none;
+}
+
+.board-viewport .board {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
+/* Sits over the board's centre area (inside the ring of squares) and never zooms. */
+.board-overlay {
+  position: absolute;
+  inset: calc((100% - 12px) / 7 + 9px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.board-overlay > * {
+  pointer-events: auto;
+}
+
+.dice-cup {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.dice-cup canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.dice-cup.can-roll canvas {
+  cursor: grab;
+  touch-action: none;
+}
+
+.dice-cup.shaking canvas {
+  cursor: grabbing;
+}
+
+.cup-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  background: rgba(12, 18, 24, 0.85);
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: hint-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.overlay-hud {
+  flex: 0 0 auto;
+  width: 74%;
+  max-height: 58%;
+  overflow-y: auto;
+  margin-bottom: 2%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 14px;
+  /* Opaque: the centre art has dice and a Jackpot painted in that would ghost through. */
+  background: rgb(12, 18, 24);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.overlay-hud .center-info,
+.overlay-hud .jackpot {
+  background: none;
+}
+
+.zoom-controls {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(12, 18, 24, 0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.zoom-controls button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.zoom-controls button:disabled {
+  opacity: 0.4;
+}
+
+.zoom-level {
+  min-width: 3.2em;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+  .overlay-hud {
+    width: 92%;
+    padding: 0.35rem 0.4rem;
+    font-size: 0.8rem;
+  }
+
+  .cup-hint {
+    font-size: 0.62rem;
+  }
+
+  .zoom-controls button {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-zoom {
+    transition: none;
+  }
+
+  .cup-hint {
+    animation: none;
+  }
+}

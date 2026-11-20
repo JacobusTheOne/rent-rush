@@ -25,14 +25,22 @@ function bg(art: Set<string>, src: string): React.CSSProperties | undefined {
 }
 
 /** view: what to show while animating (lib/useBoardAnimation); omitted = the state as-is. */
-export function Board({ state, view, children }: { state: GameState; view?: BoardView; children?: React.ReactNode }) {
+export function Board({
+  state,
+  view,
+  children,
+  hud = true,
+}: {
+  state: GameState;
+  view?: BoardView;
+  children?: React.ReactNode;
+  /** false: leave the centre empty (the game screen draws its HUD in a layer that doesn't zoom). */
+  hud?: boolean;
+}) {
   const art = useAvailableArt(ALL_SRCS);
   const current = state.players[state.current];
   const hasCenter = art.has(CENTER_ART.src);
   const posOf = (id: string, fallback: number) => view?.positions[id] ?? fallback;
-  const dice = view ? view.dice : state.dice;
-  const diceArt = dice?.every((d) => art.has(DIE_ART[d - 1].src));
-
   return (
     <div
       className={`board ${art.has(BACKGROUND_ART.src) ? "has-art" : ""}`}
@@ -105,11 +113,40 @@ export function Board({ state, view, children }: { state: GameState; view?: Boar
       <div className={`board-center ${hasCenter ? "has-art" : ""}`} style={bg(art, CENTER_ART.src)}>
         {!hasCenter && <div className="board-title">RENT RUSH</div>}
         {/* With centre art, this becomes a panel at the bottom so the artwork's middle stays visible. */}
-        <div className="center-hud">
+        {hud && (
+          <CenterHud state={state} view={view}>
+            {children}
+          </CenterHud>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Round, dice, Jackpot and the last Fortune card; `children` adds e.g. the turn controls. */
+export function CenterHud({
+  state,
+  view,
+  children,
+  showDice = true,
+  className = "",
+}: {
+  state: GameState;
+  view?: BoardView;
+  children?: React.ReactNode;
+  /** false when the 3D dice cup shows the dice instead. */
+  showDice?: boolean;
+  className?: string;
+}) {
+  const art = useAvailableArt(ALL_SRCS);
+  const dice = view ? view.dice : state.dice;
+  const diceArt = dice?.every((d) => art.has(DIE_ART[d - 1].src));
+  return (
+    <div className={`center-hud ${className}`}>
         <div className="center-info muted small">
           Round {Math.min(state.round, state.maxRounds)} of {state.maxRounds}
         </div>
-        {dice && (
+        {showDice && dice && (
           <div
             className={`dice ${view?.rolling ? "rolling" : ""}`}
             aria-label={view?.rolling ? "Rolling dice" : `Dice: ${dice[0]} and ${dice[1]}`}
@@ -137,7 +174,5 @@ export function Board({ state, view, children }: { state: GameState; view?: Boar
         {/* Extra centre content, e.g. the turn controls on wide screens. */}
         {children && <div className="hud-slot">{children}</div>}
         </div>
-      </div>
-    </div>
   );
 }

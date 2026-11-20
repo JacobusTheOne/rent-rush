@@ -52,26 +52,27 @@ export function initSound(): void {
   ).then(() => undefined);
 }
 
-export function playSound(name: SoundName): void {
+export function playSound(name: SoundName, opts: { rate?: number; volume?: number } = {}): void {
   if (muted || !ctx) return;
   if (ctx.state === "suspended") {
     // The click that triggered this sound may be the one unlocking audio right now: play once it's
     // running, but only if that happens promptly (otherwise the sound would come out late).
     const asked = performance.now();
     void ctx.resume().then(() => {
-      if (performance.now() - asked < 250) start(name);
+      if (performance.now() - asked < 250) start(name, opts);
     });
     return;
   }
-  start(name);
+  start(name, opts);
 }
 
-function start(name: SoundName): void {
+function start(name: SoundName, opts: { rate?: number; volume?: number }): void {
   const buffer = buffers[name];
   if (!ctx || ctx.state !== "running" || muted || !buffer) return;
   const source = ctx.createBufferSource();
   const gain = ctx.createGain();
-  gain.gain.value = VOLUME[name];
+  gain.gain.value = VOLUME[name] * (opts.volume ?? 1);
+  source.playbackRate.value = opts.rate ?? 1;
   source.buffer = buffer;
   source.connect(gain).connect(ctx.destination);
   source.start();
