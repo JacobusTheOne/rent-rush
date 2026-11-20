@@ -30,6 +30,8 @@ const USER_POOL_ID = requireEnv("USER_POOL_ID");
 const DAY = 24 * 60 * 60;
 /** DynamoDB TTL per status: abandoned lobbies vanish fast, finished games linger briefly. */
 const TTL_SECONDS: Record<Status, number> = { WAITING: 1 * DAY, PLAYING: 7 * DAY, FINISHED: 2 * DAY };
+/** Paused games wait longer for their players to come back. */
+const PAUSED_TTL_SECONDS = 30 * DAY;
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const cognito = new CognitoIdentityProviderClient({});
@@ -185,8 +187,14 @@ async function leaveGame(me: string, gameId: string) {
   const game = await load(gameId);
   if (!game.players.some((p) => p.id === me)) throw new Error("You are not in that game");
 
-  if (game.status === "PLAYING") return gameAction(me, gameId, { type: "FORFEIT" });
-  if (game.status === "FINISHED") return view(game);
+  // Leaving mid-game forfeits and takes you off the table's player list (and your lobby).
+  if (game.status === "PLAYING") return gameAction(me, gameId, { type: "FORFEIT" }, true);
+  if (game.status === "FINISHED") {
+    // Leaving a finished game takes it off your list; the last human to leave closes the table.
+    const players = game.players.filter((p) => p.id !== me);
+    if (!players.some((p) => !p.bot)) return closeGame(game);
+    return view(await save(game, { ...game, players }));
+  }
 
   const players = game.players.filter((p) => p.id !== me);
   const humans = players.filter((p) => !p.bot);
@@ -224,7 +232,7 @@ async function startGame(me: string, gameId: string) {
   return view(await save(game, { ...game, status: "PLAYING", state }));
 }
 
-async function gameAction(me: string, gameId: string, action: IncomingAction) {
+async function gameAction(me: string, gameId: string, action: IncomingAction, leaving = false) {
   const game = await load(gameId);
   if (game.status !== "PLAYING" || !game.state) throw new Error("This game isn't in progress");
   if (!game.players.some((p) => p.id === me && !p.bot)) throw new Error("You are not in this game");
@@ -248,7 +256,10 @@ async function gameAction(me: string, gameId: string, action: IncomingAction) {
     return closeGame(game);
   }
   const status: Status = state.phase === "OVER" ? "FINISHED" : "PLAYING";
-  return view(await save(game, { ...game, status, state }));
+  const players = leaving ? game.players.filter((p) => p.id !== me) : game.players;
+  // The game ended as the last human left the table: nobody is left to look at it.
+  if (status === "FINISHED" && !players.some((p) => !p.bot)) return closeGame(game);
+  return view(await save(game, { ...game, status, state, players }));
 }
 
 /** Deletes the table (if nobody changed it meanwhile); clients and the lobby see status CLOSED. */
@@ -279,7 +290,7 @@ async function save(prev: GameItem, next: GameItem): Promise<GameItem> {
     ...next,
     version: prev.version + 1,
     updatedAt: now,
-    expiresAt: ttl(next.status, now),
+    expiresAt: next.state?.paused ? Math.floor(now / 1000) + PAUSED_TTL_SECONDS : ttl(next.status, now),
   };
   await ddb.send(
     new PutCommand({

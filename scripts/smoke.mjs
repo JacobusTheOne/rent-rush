@@ -243,6 +243,43 @@ check(rejected, "closed table is deleted");
 const lobbyAfter = await gql(A, `query { listLobby { gameId } }`);
 check(!lobbyAfter.some((g) => g.gameId === solo.gameId), "closed table is gone from the lobby");
 
+// ---- no round limit, pause/resume, and leaving a finished game
+console.log("Pause, no round limit, leaving");
+const open = await gql(
+  A,
+  `mutation M($n: String!, $p: Int!, $r: Int!) { createGame(name: $n, maxPlayers: $p, maxRounds: $r) { ${FIELDS} } }`,
+  { n: "Endless table", p: 2, r: 0 },
+);
+check(open.maxRounds === 0, "a table with no round limit can be created");
+await gql(B, `mutation M($g: String!) { joinGame(gameId: $g) { gameId } }`, { g: open.gameId });
+let pg = await gql(A, `mutation M($g: String!) { startGame(gameId: $g) { ${FIELDS} } }`, { g: open.gameId });
+const actOn = (user, action) =>
+  gql(user, `mutation M($g: String!, $a: AWSJSON!) { gameAction(gameId: $g, action: $a) { ${FIELDS} } }`, {
+    g: open.gameId,
+    a: JSON.stringify(action),
+  });
+const whoseTurn = users[pg.state.players[pg.state.current].id];
+const other = whoseTurn === A ? B : A;
+pg = await actOn(other, { type: "PAUSE" });
+check(pg.state.paused?.by === other.sub, "any player can pause, even when it's not their turn");
+rejected = false;
+try { await actOn(whoseTurn, { type: "ROLL" }); } catch (e) { rejected = /paused/.test(e.message); }
+check(rejected, "no moves while paused");
+pg = await actOn(whoseTurn, { type: "RESUME" });
+check(!pg.state.paused, "another player resumed it");
+pg = await actOn(whoseTurn, { type: "ROLL" });
+check(pg.state.rollSeq === 1, "play continues after resuming");
+
+const left1 = await gql(A, `mutation M($g: String!) { leaveGame(gameId: $g) { ${FIELDS} } }`, { g: open.gameId });
+check(left1.status === "FINISHED" && !left1.players.some((p) => p.id === A.sub), "leaving mid-game forfeits and takes you off the table");
+const lobbyA = await gql(A, `query { listLobby { gameId } }`);
+check(!lobbyA.some((g) => g.gameId === open.gameId), "the game is gone from the leaver's lobby");
+const left2 = await gql(B, `mutation M($g: String!) { leaveGame(gameId: $g) { ${FIELDS} } }`, { g: open.gameId });
+check(left2.status === "CLOSED", "the last player leaving a finished game closes the table");
+rejected = false;
+try { await gql(B, `query Q($g: String!) { getGame(gameId: $g) { gameId } }`, { g: open.gameId }); } catch (e) { rejected = /not found/.test(e.message); }
+check(rejected, "closed finished table is deleted");
+
 for (const ws of [lobbyWs, gameWs, otherWs]) ws.close();
 await signOut();
 console.log("\nSMOKE TEST PASSED");

@@ -76,6 +76,8 @@ export interface GameState {
   moveSeq?: number;
   /** The piece movements caused by the most recent action, in order (for animation). */
   lastMoves?: Move[];
+  /** Set while a player has paused the game: no moves (and no idle skips) until someone resumes. */
+  paused?: { by: string; name: string; at: number } | null;
 }
 
 /** One piece movement. steps > 0 walks forward, < 0 walks back, 0 = direct jump. */
@@ -99,11 +101,13 @@ export type Action =
   | { type: "BANKRUPT" }
   | { type: "END_TURN" }
   | { type: "FORFEIT" }
-  | { type: "SKIP_IDLE" };
+  | { type: "SKIP_IDLE" }
+  | { type: "PAUSE" }
+  | { type: "RESUME" };
 
 export const ACTION_TYPES: ReadonlySet<string> = new Set([
   "ROLL", "BUY", "DECLINE", "PAY_BAIL", "USE_CARD", "UPGRADE", "SELL_UPGRADE",
-  "SELL_PROPERTY", "PAY_DEBT", "BANKRUPT", "END_TURN", "FORFEIT", "SKIP_IDLE",
+  "SELL_PROPERTY", "PAY_DEBT", "BANKRUPT", "END_TURN", "FORFEIT", "SKIP_IDLE", "PAUSE", "RESUME",
 ]);
 
 export interface Ctx {
@@ -163,7 +167,7 @@ export function newGame(
     moveSeq: 0,
     lastMoves: [],
   };
-  log(s, `Game on! ${s.players[0].name} goes first. ${maxRounds} rounds.`);
+  log(s, `Game on! ${s.players[0].name} goes first. ${maxRounds > 0 ? `${maxRounds} rounds.` : "No round limit."}`);
   return s;
 }
 
@@ -244,8 +248,26 @@ export function applyAction(state: GameState, actorId: string, action: Action, c
   // Actions anyone in the game may take, regardless of turn.
   if (action.type === "FORFEIT") {
     goBankrupt(s, actor, null, `${actor.name} left the game.`, ctx);
+    if (s.winner) s.paused = null; // the forfeit ended the game
     return s;
   }
+  if (action.type === "PAUSE") {
+    if (s.paused) throw new RuleError("The game is already paused");
+    if (actor.bot) throw new RuleError("Bots can't pause the game");
+    s.paused = { by: actor.id, name: actor.name, at: ctx.now };
+    log(s, `${actor.name} paused the game.`);
+    return s;
+  }
+  if (action.type === "RESUME") {
+    if (!s.paused) throw new RuleError("The game isn't paused");
+    if (actor.bot) throw new RuleError("Bots can't resume the game");
+    s.paused = null;
+    // A fresh turn clock, so nobody can be skipped as idle the moment the game resumes.
+    s.turnStartedAt = ctx.now;
+    log(s, `${actor.name} resumed the game.`);
+    return s;
+  }
+  if (s.paused) throw new RuleError(`The game is paused by ${s.paused.name}`);
   if (action.type === "SKIP_IDLE") {
     skipIdle(s, actor, ctx);
     return s;
@@ -643,11 +665,11 @@ function advanceTurn(s: GameState, ctx: Ctx) {
 
   if (next <= s.current) {
     s.round += 1;
-    if (s.round > s.maxRounds) {
+    if (s.maxRounds > 0 && s.round > s.maxRounds) {
       finishByWorth(s, "Time's up");
       return;
     }
-    log(s, `Round ${s.round} of ${s.maxRounds}.`);
+    log(s, s.maxRounds > 0 ? `Round ${s.round} of ${s.maxRounds}.` : `Round ${s.round}.`);
   }
   s.current = next;
   s.phase = "ROLL";

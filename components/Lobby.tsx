@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RULES } from "@/game/board";
+import { RULES, roundsLabel } from "@/game/board";
 import { api, errorMessage, type Game } from "@/lib/api";
 
 interface Props {
@@ -93,7 +93,7 @@ export function Lobby({ me, myName, onOpen }: Props) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            run(() => api.createGame(name.trim() || `${myName || "My"}'s table`, maxPlayers, maxRounds, isPrivate));
+            run(() => api.createGame(name.trim() || (myName ? `${myName}'s table` : "My table"), maxPlayers, maxRounds, isPrivate));
           }}
         >
           <label>
@@ -101,7 +101,7 @@ export function Lobby({ me, myName, onOpen }: Props) {
             <input
               value={name}
               maxLength={40}
-              placeholder={`${myName || "My"}'s table`}
+              placeholder={(myName ? `${myName}'s table` : "My table")}
               onChange={(e) => setName(e.target.value)}
             />
           </label>
@@ -121,7 +121,7 @@ export function Lobby({ me, myName, onOpen }: Props) {
               <select value={maxRounds} onChange={(e) => setMaxRounds(Number(e.target.value))}>
                 {RULES.roundOptions.map((n) => (
                   <option key={n} value={n}>
-                    {n} rounds
+                    {n > 0 ? `${n} rounds` : "No limit"}
                   </option>
                 ))}
               </select>
@@ -166,9 +166,36 @@ export function Lobby({ me, myName, onOpen }: Props) {
           <ul className="game-list">
             {mine.map((g) => (
               <GameRow key={g.gameId} game={g} me={me}>
-                <button type="button" onClick={() => onOpen(g.gameId)}>
-                  {g.status === "PLAYING" ? "Resume" : "Open"}
-                </button>
+                <div className="row">
+                  <button type="button" onClick={() => onOpen(g.gameId)}>
+                    {g.status === "PLAYING" ? "Resume" : "Open"}
+                  </button>
+                  {g.status === "FINISHED" && (
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={busy}
+                      title="Take this finished game off your list"
+                      onClick={async () => {
+                        setBusy(true);
+                        try {
+                          await api.leaveGame(g.gameId);
+                          setGames((prev) => {
+                            const next = new Map(prev);
+                            next.delete(g.gameId);
+                            return next;
+                          });
+                        } catch (err) {
+                          setError(errorMessage(err));
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </GameRow>
             ))}
           </ul>
@@ -209,9 +236,11 @@ function GameRow({ game, me, children }: { game: Game; me: string; children: Rea
         <strong>{game.name}</strong>
         {game.isPrivate && <span className="badge">private</span>}
         <div className="muted small">
-          {STATUS_LABEL[game.status] ?? game.status} · {game.players.length}/{game.maxPlayers} players ·{" "}
-          {game.maxRounds} rounds
-          {turn && (turn.id === me ? " · Your turn!" : ` · ${turn.name}'s turn`)}
+          {game.state?.paused && game.status === "PLAYING"
+            ? `Paused by ${game.state.paused.name}`
+            : (STATUS_LABEL[game.status] ?? game.status)}{" "}
+          · {game.players.length}/{game.maxPlayers} players · {roundsLabel(game.maxRounds)}
+          {turn && !game.state?.paused && (turn.id === me ? " · Your turn!" : ` · ${turn.name}'s turn`)}
         </div>
         <div className="small">{game.players.map((p) => p.name).join(", ")}</div>
       </div>

@@ -29,8 +29,11 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
   const busy = requestBusy || view.animating;
   const current = state.players[state.current];
   const mePlayer = state.players.find((p) => p.id === me);
-  const myTurn = current.id === me && state.phase !== "OVER";
+  const paused = state.paused ?? null;
+  const myTurn = current.id === me && state.phase !== "OVER" && !paused;
   const canRoll = myTurn && state.phase === "ROLL" && !busy;
+  // Any human still in the game can pause or resume it.
+  const canPause = !!mePlayer && !mePlayer.bankrupt && !mePlayer.bot && state.phase !== "OVER";
 
   // 3D dice cup; falls back to the flat dice if the browser can't do 3D.
   const cup = useRef<DiceCupHandle>(null);
@@ -55,7 +58,9 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
       )}
       <div className="actions">
         {state.phase === "OVER" ? (
-          <GameOver state={state} onExit={onExit} />
+          <GameOver state={state} onLeave={onLeave} onExit={onExit} />
+        ) : paused ? (
+          <Paused paused={paused} canResume={canPause} busy={requestBusy} onAction={onAction} />
         ) : myTurn ? (
           <MyTurn state={state} busy={busy} onAction={act} />
         ) : (
@@ -76,6 +81,17 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
               Lobby
             </button>
             <SoundToggle />
+            {canPause && !paused && (
+              <button
+                type="button"
+                className="secondary"
+                disabled={requestBusy}
+                title="Pause the game for everyone; anyone can resume it later"
+                onClick={() => onAction({ type: "PAUSE" })}
+              >
+                ⏸ Pause
+              </button>
+            )}
             {mePlayer && !mePlayer.bankrupt && state.phase !== "OVER" && (
               <button
                 type="button"
@@ -292,7 +308,37 @@ function Waiting({
   );
 }
 
-function GameOver({ state, onExit }: { state: GameState; onExit: () => void }) {
+/** Shown to everyone while the game is paused. */
+function Paused({
+  paused,
+  canResume,
+  busy,
+  onAction,
+}: {
+  paused: NonNullable<GameState["paused"]>;
+  canResume: boolean;
+  busy: boolean;
+  onAction: (a: Action) => void;
+}) {
+  return (
+    <div className="paused-panel">
+      <p>
+        <strong>⏸ Game paused</strong> by {paused.name}.
+        <br />
+        <span className="muted small">
+          Come back any time: it stays in everyone&apos;s lobby under “Your games”. Nobody can be skipped while it&apos;s paused.
+        </span>
+      </p>
+      {canResume && (
+        <button type="button" disabled={busy} onClick={() => onAction({ type: "RESUME" })}>
+          ▶ Resume game
+        </button>
+      )}
+    </div>
+  );
+}
+
+function GameOver({ state, onLeave, onExit }: { state: GameState; onLeave: () => void; onExit: () => void }) {
   const ranked = [...state.players].sort((a, b) => netWorth(state, b.id) - netWorth(state, a.id));
   const winner = state.players.find((p) => p.id === state.winner);
   return (
@@ -305,9 +351,15 @@ function GameOver({ state, onExit }: { state: GameState; onExit: () => void }) {
           </li>
         ))}
       </ol>
-      <button type="button" onClick={onExit}>
-        Back to lobby
-      </button>
+      <div className="row">
+        {/* Leaving takes the game off your list; the last player to leave closes the table. */}
+        <button type="button" onClick={onLeave}>
+          Leave table
+        </button>
+        <button type="button" className="secondary" onClick={onExit}>
+          Back to lobby
+        </button>
+      </div>
     </>
   );
 }

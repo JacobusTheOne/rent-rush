@@ -1,6 +1,6 @@
 "use client";
 
-import { BOARD, DISTRICTS, TOKEN_COLORS, gridPosition, isOwnable } from "@/game/board";
+import { BOARD, DISTRICTS, TOKEN_COLORS, gridPosition, isOwnable, roundProgress } from "@/game/board";
 import { ALL_ART, BACKGROUND_ART, CARD_ART, CENTER_ART, DIE_ART, SQUARE_ART } from "@/game/art";
 import { rentFor, type GameState } from "@/game/engine";
 import { useAvailableArt } from "@/lib/useArt";
@@ -144,7 +144,7 @@ export function CenterHud({
   return (
     <div className={`center-hud ${className}`}>
         <div className="center-info muted small">
-          Round {Math.min(state.round, state.maxRounds)} of {state.maxRounds}
+          {roundProgress(state.round, state.maxRounds)}
         </div>
         {showDice && dice && (
           <div

@@ -2232,3 +2232,58 @@ dialog.card-stage::backdrop {
     flex: 1;
   }
 }
+
+/* ---------- phones: keep the board clear ---------- */
+
+/* Without the turn controls inside it (phones/tablets), the centre panel is a compact card
+   with the round and the Jackpot, sized and placed to cover just the dice and Jackpot that are
+   painted into the centre artwork (about 30-70% across, 66-88% down), not most of the board. */
+.overlay-hud:not(:has(.hud-slot)) {
+  justify-content: center;
+  width: 46%;
+  min-height: 25%;
+  max-width: none;
+  gap: 0.3rem;
+  padding: 0.3rem 0.5rem;
+  margin-bottom: 9%;
+  border-radius: 12px;
+  background: rgb(12, 18, 24);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+  font-size: 0.8rem;
+}
+
+.overlay-hud:not(:has(.hud-slot)) .jackpot {
+  padding: 0.05rem 0.55rem;
+}
+
+.overlay-hud:not(:has(.hud-slot)) .card {
+  display: none;
+}
+
+/* Touch screens zoom with pinch / double-tap: only show the "fit" button once zoomed in. */
+@media (pointer: coarse) {
+  .board-viewport:not(.zoomed) .zoom-controls {
+    display: none;
+  }
+
+  .board-viewport.zoomed .zoom-controls :is([aria-label="Zoom in"], [aria-label="Zoom out"], .zoom-level) {
+    display: none;
+  }
+}
+
+/* ---------- paused game ---------- */
+
+.paused-panel {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.paused-panel p {
+  margin: 0;
+}
+
+.hud-slot .paused-panel {
+  justify-items: center;
+  text-align: center;
+}

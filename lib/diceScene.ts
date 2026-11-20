@@ -128,11 +128,14 @@ export async function createDiceScene(canvas: HTMLCanvasElement, initial: [numbe
   const THREE = await import("three");
   const { RoundedBoxGeometry } = await import("three/examples/jsm/geometries/RoundedBoxGeometry.js");
   const instant = prefersReducedMotion();
+  // Phones/tablets: no soft shadows (lighter on the battery, and some mobile GPUs render the
+  // shadow plane as a dark film over the whole canvas).
+  const lowPower = window.matchMedia("(pointer: coarse)").matches;
 
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, lowPower ? 1.5 : 2));
   renderer.setClearColor(0x000000, 0);
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !lowPower;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -155,7 +158,7 @@ export async function createDiceScene(canvas: HTMLCanvasElement, initial: [numbe
   const table = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.35 }));
   table.rotation.x = -Math.PI / 2;
   table.receiveShadow = true;
-  scene.add(table);
+  if (!lowPower) scene.add(table);
 
   // ---- cup: a lathe-turned leather cup with gold bands; group origin = middle of the cup
   const cup = new THREE.Group();

@@ -241,3 +241,64 @@ describe("move tracking (for animation)", () => {
     expect(s.lastMoves).toHaveLength(1);
   });
 });
+
+describe("pause and resume", () => {
+  it("freezes the game while paused and resumes with a fresh turn clock", () => {
+    let s = twoPlayer();
+    s = act(s, "b", "PAUSE", undefined, 5_000); // any player may pause, even out of turn
+    expect(s.paused).toMatchObject({ by: "b", name: "Bob" });
+    expect(() => roll(s, "a", 1, 2)).toThrow(/paused by Bob/);
+    expect(() => act(s, "b", "SKIP_IDLE", undefined, 999_999)).toThrow(/paused/);
+    expect(() => act(s, "a", "PAUSE")).toThrow(/already paused/);
+    s = act(s, "a", "RESUME", undefined, 900_000); // anyone may resume
+    expect(s.paused).toBeNull();
+    expect(s.turnStartedAt).toBe(900_000);
+    expect(() => act(s, "a", "RESUME")).toThrow(/isn't paused/);
+    s = roll(s, "a", 1, 2);
+    expect(s.players[0].position).toBe(3);
+  });
+
+  it("still lets a player leave a paused game", () => {
+    let s = twoPlayer();
+    s = act(s, "a", "PAUSE");
+    s = act(s, "a", "FORFEIT");
+    expect(s.phase).toBe("OVER");
+    expect(s.winner).toBe("b");
+    expect(s.paused).toBeNull();
+  });
+
+  it("doesn't let bots pause", () => {
+    const s = newGame([A, { id: "bot-1", name: "Bot Penny", bot: true }], 20, scripted([1]));
+    expect(() => act(s, "bot-1", "PAUSE")).toThrow(/Bots/);
+  });
+});
+
+describe("round limits", () => {
+  /** Plays both players' turns with small, non-double rolls (Ann starts at Start). */
+  function playRounds(s: GameState, rounds: number): GameState {
+    for (let r = 0; r < rounds && s.phase !== "OVER"; r++) {
+      for (const id of ["a", "b"]) {
+        if (s.phase === "OVER") break;
+        s = roll(s, id, 1, 2);
+        while (s.phase !== "ROLL" && s.phase !== "OVER") {
+          s = act(s, id, s.phase === "BUY" ? "DECLINE" : s.phase === "DEBT" ? "BANKRUPT" : "END_TURN");
+        }
+      }
+    }
+    return s;
+  }
+
+  it("ends by net worth when the round limit is reached", () => {
+    const s = playRounds(twoPlayer(2), 3);
+    expect(s.phase).toBe("OVER");
+    expect(s.log.at(-1)!.text).toMatch(/Time's up/);
+  });
+
+  it("keeps going with no round limit (0)", () => {
+    const s = playRounds(twoPlayer(0), 40);
+    expect(s.phase).not.toBe("OVER");
+    expect(s.round).toBeGreaterThan(30);
+    expect(s.log.some((l) => /^Round \d+\.$/.test(l.text))).toBe(true);
+    expect(twoPlayer(0).log[0].text).toMatch(/No round limit/);
+  });
+});

@@ -74,10 +74,21 @@ export const RULES = {
   sellBackRate: 0.5,
   /** Other players may skip someone who hasn't acted for this long. */
   idleMs: 120_000,
-  roundOptions: [10, 20, 30],
+  /** Round limits to choose from; 0 = no limit (play until one player is left). */
+  roundOptions: [10, 20, 30, 0],
   minPlayers: 2,
   maxPlayers: 4,
 } as const;
+
+/** "20 rounds" or "No round limit". */
+export function roundsLabel(maxRounds: number): string {
+  return maxRounds > 0 ? `${maxRounds} rounds` : "No round limit";
+}
+
+/** "Round 3 of 20", or just "Round 3" without a limit. */
+export function roundProgress(round: number, maxRounds: number): string {
+  return maxRounds > 0 ? `Round ${Math.min(round, maxRounds)} of ${maxRounds}` : `Round ${round}`;
+}
 
 export const TOKEN_COLORS = ["#f2c94c", "#eb5757", "#56ccf2", "#6fcf97"];
 

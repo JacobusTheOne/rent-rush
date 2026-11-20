@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RULES } from "@/game/board";
+import { RULES, roundsLabel } from "@/game/board";
 import { api, errorMessage, type Game } from "@/lib/api";
 import { animationMs } from "@/lib/useBoardAnimation";
 import { GameScreen } from "./GameScreen";
@@ -57,7 +57,7 @@ export function GameRoom({ gameId, me, onExit }: Props) {
   // player's browser goes quiet. Duplicate/conflicting requests are harmless (version check).
   const botTurn = (() => {
     const s = game?.status === "PLAYING" ? game.state : null;
-    if (!s || s.phase === "OVER" || !s.players[s.current].bot) return null;
+    if (!s || s.phase === "OVER" || s.paused || !s.players[s.current].bot) return null;
     if (!s.players.some((p) => p.id === me && !p.bot)) return null;
     const driver = s.players.find((p) => !p.bot && !p.bankrupt);
     // Let the dice/piece animation of the bot's last move finish before its next one.
@@ -138,7 +138,7 @@ export function GameRoom({ gameId, me, onExit }: Props) {
           {game.name} {game.isPrivate && <span className="badge">private</span>}
         </h2>
         <p className="muted">
-          {game.maxRounds} rounds · waiting for players ({game.players.length}/{game.maxPlayers})
+          {roundsLabel(game.maxRounds)} · waiting for players ({game.players.length}/{game.maxPlayers})
         </p>
         {isPlayer && game.players.length < game.maxPlayers && <InviteLink game={game} />}
         <ul className="seats">
