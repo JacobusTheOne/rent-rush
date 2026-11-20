@@ -11,8 +11,10 @@
  * federation, and we don't store long-lived AWS keys in GitHub.
  *
  * Usage:
- *   npm run deploy                  # backend + frontend
- *   npm run deploy -- --skip-backend   # frontend only (reuses amplify_outputs.production.json)
+ *   npm run deploy:backend             # backend only: then commit amplify_outputs.production.json
+ *                                      # and push; Netlify (linked to GitHub) rebuilds the site
+ *   npm run deploy                     # backend + a manual frontend upload from this machine
+ *   npm run deploy -- --skip-backend   # manual frontend upload only
  * Requires: `aws login --profile <awsProfile>`, `netlify login`, folder linked with `netlify link`.
  */
 import { execSync } from "node:child_process";
@@ -22,6 +24,7 @@ const root = new URL("..", import.meta.url);
 const file = (name) => new URL(name, root);
 const { amplifyAppId, awsProfile, awsRegion } = JSON.parse(readFileSync(file("package.json"), "utf8")).config;
 const skipBackend = process.argv.includes("--skip-backend");
+const backendOnly = process.argv.includes("--backend-only");
 
 const LOCAL = file("amplify_outputs.json");
 const PROD = file("amplify_outputs.production.json");
@@ -42,10 +45,15 @@ try {
     copyFileSync(LOCAL, PROD); // pipeline-deploy writes ./amplify_outputs.json
   }
   if (!existsSync(PROD)) throw new Error("No amplify_outputs.production.json yet: run without --skip-backend first.");
-
-  copyFileSync(PROD, LOCAL);
-  run("npm run build");
-  run("npx netlify deploy --prod --dir out");
+  if (backendOnly) {
+    console.log(
+      "\nBackend deployed. Commit amplify_outputs.production.json if it changed and push: Netlify rebuilds the site.",
+    );
+  } else {
+    copyFileSync(PROD, LOCAL);
+    run("npm run build");
+    run("npx netlify deploy --prod --dir out");
+  }
 } finally {
   if (hadLocal) renameSync(BACKUP, LOCAL);
   else rmSync(LOCAL, { force: true });

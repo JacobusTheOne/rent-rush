@@ -44,16 +44,23 @@ To play multiplayer locally, open a second browser (or a private window) and sig
 Live at **https://rent-rush-715.netlify.app**. Production uses its own backend (Amplify app
 `rent-rush`, branch `main`, us-east-2), separate from your sandbox.
 
+- **Website:** Netlify builds from GitHub. Every push to `main` rebuilds the site with
+  `netlify.toml` (it copies `amplify_outputs.production.json` over `amplify_outputs.json` and
+  runs `npm run build`).
+- **Backend:** deployed from your machine (the AWS project blocks GitHub OIDC, and no
+  long-lived AWS keys are stored in GitHub):
+
 ```bash
-npm run deploy                    # production backend (ampx pipeline-deploy) + build + Netlify
-npm run deploy -- --skip-backend  # frontend only
+npm run deploy:backend   # production backend (ampx pipeline-deploy); updates amplify_outputs.production.json
+git add amplify_outputs.production.json && git commit -m "Update production backend config" && git push
 ```
 
-Deploys run from your machine (the AWS project blocks GitHub OIDC, and no long-lived AWS keys
-are stored in GitHub). The script builds against `amplify_outputs.production.json` and restores
-your sandbox `amplify_outputs.json` afterwards. Needs `aws login --profile aws-project` and the
-Netlify CLI logged in; the folder is linked to the `rent-rush-715` site. Security headers (CSP
-etc.) are in `netlify.toml`.
+`amplify_outputs.production.json` is committed on purpose: it only holds public browser config
+(API URL, user/identity pool ids, the guests' public API key) that the live site serves anyway.
+Your local `amplify_outputs.json` stays pointed at your sandbox. Needs
+`aws login --profile aws-project`. `npm run deploy` (backend + manual upload with the Netlify CLI)
+still works if you ever need to bypass the GitHub build. Security headers (CSP etc.) are in
+`netlify.toml`.
 
 ## Board art
 

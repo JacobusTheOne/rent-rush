@@ -1,6 +1,12 @@
-# Deployed from this machine with `npm run deploy` (builds locally, uploads ./out).
+# Netlify builds from GitHub (main) against the PRODUCTION backend settings, which are
+# committed as amplify_outputs.production.json (public browser config only: no secrets).
+# Local dev keeps amplify_outputs.json pointing at your sandbox.
 [build]
+  command = "cp amplify_outputs.production.json amplify_outputs.json && npm run build"
   publish = "out"
+
+[build.environment]
+  NODE_VERSION = "24"
 
 [[headers]]
   for = "/*"

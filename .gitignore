@@ -38,6 +38,8 @@ next-env.d.ts
 # amplify
 .amplify
 amplify_outputs*
+# Production browser config (public: API URL, pool ids, guest API key) for Netlify builds.
+!amplify_outputs.production.json
 amplifyconfiguration*
 # netlify
 .netlify

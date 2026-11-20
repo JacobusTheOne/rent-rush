@@ -1,0 +1,366 @@
+{
+  "auth": {
+    "user_pool_id": "us-east-2_zPbIV6OhC",
+    "aws_region": "us-east-2",
+    "user_pool_client_id": "5h5er5n6m4fjp67i75mhsl6fik",
+    "identity_pool_id": "us-east-2:567de768-eb65-4787-84b1-5cb381c25c54",
+    "mfa_methods": [],
+    "standard_required_attributes": [
+      "email",
+      "preferred_username"
+    ],
+    "username_attributes": [
+      "email"
+    ],
+    "user_verification_types": [
+      "email"
+    ],
+    "groups": [],
+    "mfa_configuration": "NONE",
+    "password_policy": {
+      "min_length": 8,
+      "require_lowercase": true,
+      "require_numbers": true,
+      "require_symbols": true,
+      "require_uppercase": true
+    },
+    "unauthenticated_identities_enabled": true
+  },
+  "data": {
+    "url": "https://mfbxufpoj5ehdoeqlfdrfwhcxe.appsync-api.us-east-2.amazonaws.com/graphql",
+    "aws_region": "us-east-2",
+    "api_key": "da2-5fsxbxc2pjhbtatlqnenomw5du",
+    "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
+    "authorization_types": [
+      "API_KEY",
+      "AWS_IAM"
+    ],
+    "model_introspection": {
+      "version": 1,
+      "models": {},
+      "enums": {},
+      "nonModels": {
+        "LobbyPlayer": {
+          "name": "LobbyPlayer",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "bot": {
+              "name": "bot",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "guest": {
+              "name": "guest",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "GameView": {
+          "name": "GameView",
+          "fields": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "hostId": {
+              "name": "hostId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "maxPlayers": {
+              "name": "maxPlayers",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            },
+            "maxRounds": {
+              "name": "maxRounds",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            },
+            "isPrivate": {
+              "name": "isPrivate",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": true,
+              "attributes": []
+            },
+            "players": {
+              "name": "players",
+              "isArray": true,
+              "type": {
+                "nonModel": "LobbyPlayer"
+              },
+              "isRequired": true,
+              "attributes": [],
+              "isArrayNullable": false
+            },
+            "version": {
+              "name": "version",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true,
+              "attributes": []
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "state": {
+              "name": "state",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        }
+      },
+      "queries": {
+        "listLobby": {
+          "name": "listLobby",
+          "isArray": true,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": true,
+          "isArrayNullable": true
+        },
+        "getGame": {
+          "name": "getGame",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        }
+      },
+      "mutations": {
+        "createGame": {
+          "name": "createGame",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "maxPlayers": {
+              "name": "maxPlayers",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true
+            },
+            "maxRounds": {
+              "name": "maxRounds",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": true
+            },
+            "playerName": {
+              "name": "playerName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "isPrivate": {
+              "name": "isPrivate",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false
+            }
+          }
+        },
+        "joinGame": {
+          "name": "joinGame",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "playerName": {
+              "name": "playerName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "leaveGame": {
+          "name": "leaveGame",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "startGame": {
+          "name": "startGame",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "addBot": {
+          "name": "addBot",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "removeBot": {
+          "name": "removeBot",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "botId": {
+              "name": "botId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "gameAction": {
+          "name": "gameAction",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "action": {
+              "name": "action",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": true
+            }
+          }
+        }
+      },
+      "subscriptions": {
+        "onGameUpdated": {
+          "name": "onGameUpdated",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": "1.5"
+}
