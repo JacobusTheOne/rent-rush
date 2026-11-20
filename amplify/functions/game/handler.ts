@@ -71,6 +71,8 @@ interface GameItem {
   hostId: string;
   maxPlayers: number;
   maxRounds: number;
+  /** Not listed in the lobby; joined with the invite link (the game id). */
+  isPrivate?: boolean;
   players: LobbyPlayer[];
   state: GameState | null;
   version: number;
@@ -127,8 +129,9 @@ async function listLobby(me: string) {
     (["WAITING", "PLAYING", "FINISHED"] as const).map((status) => byStatus(status)),
   );
   const mine = (g: GameItem) => g.players.some((p) => p.id === me);
-  // Open lobbies for everyone; in-progress/finished games only for their players.
-  return [...waiting, ...playing.filter(mine), ...finished.filter(mine)].map((g) => view(g));
+  // Public open tables for everyone; private ones and in-progress/finished games only for their players.
+  const listed = (g: GameItem) => !g.isPrivate || mine(g);
+  return [...waiting.filter(listed), ...playing.filter(mine), ...finished.filter(mine)].map((g) => view(g));
 }
 
 async function createGame(caller: Caller, args: Args) {
@@ -155,6 +158,7 @@ async function createGame(caller: Caller, args: Args) {
     hostId: caller.id,
     maxPlayers,
     maxRounds,
+    isPrivate: args.isPrivate === true,
     players: [await seat(caller, args.playerName, [])],
     state: null,
     version: 1,
@@ -313,6 +317,7 @@ function view(g: GameItem, status: string = g.status) {
     hostId: g.hostId,
     maxPlayers: g.maxPlayers,
     maxRounds: g.maxRounds,
+    isPrivate: g.isPrivate === true,
     players: g.players,
     version: g.version,
     updatedAt: new Date(g.updatedAt).toISOString(),

@@ -24,6 +24,8 @@ const schema = a.schema({
     hostId: a.string().required(),
     maxPlayers: a.integer().required(),
     maxRounds: a.integer().required(),
+    /** Private tables aren't listed in the lobby; players join with the invite link. */
+    isPrivate: a.boolean().required(),
     players: a.ref("LobbyPlayer").required().array().required(),
     version: a.integer().required(),
     updatedAt: a.string().required(),
@@ -52,6 +54,8 @@ const schema = a.schema({
       maxRounds: a.integer().required(),
       /** Guests only: the display name to use (signed-in players use their account name). */
       playerName: a.string(),
+      /** true: not listed in the lobby; share the invite link instead. */
+      isPrivate: a.boolean(),
     })
     .returns(a.ref("GameView"))
     .handler(a.handler.function(game))
@@ -106,7 +110,7 @@ const schema = a.schema({
 
   /**
    * Fires after any of the mutations above. Pass gameId to follow one game;
-   * omit it (lobby) to receive every update.
+   * omit it (lobby) to receive updates for every public game.
    */
   onGameUpdated: a
     .subscription()
@@ -121,7 +125,9 @@ const schema = a.schema({
     ])
     .arguments({ gameId: a.string() })
     .handler(a.handler.custom({ entry: "./onGameUpdated.js" }))
-    .authorization((allow) => [allow.authenticated(), allow.guest()]),
+    // Guests can't use identity-pool auth on a custom-handler subscription, so they listen with the
+    // public API key. Read-only, and the filter in onGameUpdated.js limits the lobby to public games.
+    .authorization((allow) => [allow.authenticated(), allow.publicApiKey()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -130,5 +136,7 @@ export const data = defineData({
   schema,
   authorizationModes: {
     defaultAuthorizationMode: "userPool",
+    // Only used by guests' live updates. Keys last at most 365 days: redeploy (npm run deploy) within a year.
+    apiKeyAuthorizationMode: { expiresInDays: 365 },
   },
 });

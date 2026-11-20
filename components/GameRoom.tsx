@@ -134,10 +134,13 @@ export function GameRoom({ gameId, me, onExit }: Props) {
     const canStart = game.players.length >= RULES.minPlayers;
     return (
       <div className="panel waiting">
-        <h2>{game.name}</h2>
+        <h2>
+          {game.name} {game.isPrivate && <span className="badge">private</span>}
+        </h2>
         <p className="muted">
           {game.maxRounds} rounds · waiting for players ({game.players.length}/{game.maxPlayers})
         </p>
+        {isPlayer && game.players.length < game.maxPlayers && <InviteLink game={game} />}
         <ul className="seats">
           {Array.from({ length: game.maxPlayers }, (_, i) => game.players[i]).map((p, i) => (
             <li key={p?.id ?? `empty-${i}`} className={p ? "seat taken" : "seat"}>
@@ -211,7 +214,11 @@ export function GameRoom({ gameId, me, onExit }: Props) {
           <p className="muted small">Click an open seat to fill it with a bot, or wait for people to join.</p>
         )}
         {!isHost && isPlayer && <p className="muted small">The host starts the game once everyone is here.</p>}
-        <p className="muted small">Other signed-in players can find this table in the lobby under “Open tables”.</p>
+        <p className="muted small">
+          {game.isPrivate
+            ? "Private table: it isn't listed in the lobby. Only people with the invite link can join."
+            : "Public table: other players can also find it in the lobby under “Open tables”."}
+        </p>
       </div>
     );
   }
@@ -229,5 +236,47 @@ export function GameRoom({ gameId, me, onExit }: Props) {
       }}
       onExit={onExit}
     />
+  );
+}
+
+/** The table's address: anyone who opens it can sign in (or play as a guest) and join. */
+function InviteLink({ game }: { game: Game }) {
+  const [copied, setCopied] = useState(false);
+  const link = `${window.location.origin}${window.location.pathname}#game=${game.gameId}`;
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  return (
+    <div className="invite">
+      <label htmlFor="invite-link">Invite link</label>
+      <div className="row">
+        <input id="invite-link" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(link);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            } catch {
+              // Clipboard blocked: the field is selectable, so the link can be copied by hand.
+              document.getElementById("invite-link")?.focus();
+            }
+          }}
+        >
+          {copied ? "Copied!" : "Copy link"}
+        </button>
+        {canShare && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() =>
+              navigator.share({ title: "Rent Rush", text: `Join my Rent Rush table "${game.name}"`, url: link }).catch(() => {})
+            }
+          >
+            Share…
+          </button>
+        )}
+      </div>
+      <p className="muted small">Friends without an account can join as a guest.</p>
+    </div>
   );
 }

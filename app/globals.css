@@ -2154,3 +2154,81 @@ dialog.card-stage::backdrop {
     width: 100%;
   }
 }
+
+/* ---------- public / private tables and invite links ---------- */
+
+.visibility {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem 0.6rem;
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.visibility legend {
+  padding: 0 0.3rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.visibility .choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.visibility .choice input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+.invite {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--accent);
+  border-radius: 10px;
+  background: rgba(55, 200, 138, 0.06);
+}
+
+.invite label {
+  font-weight: 700;
+}
+
+.invite .row {
+  flex-wrap: nowrap;
+}
+
+.invite input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.invite p {
+  margin: 0;
+}
+
+.invite-note {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .invite .row {
+    flex-wrap: wrap;
+  }
+
+  .invite .row button {
+    flex: 1;
+  }
+}

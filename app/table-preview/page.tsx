@@ -50,6 +50,7 @@ function toGame(state: GameState): Game {
     hostId: "p1",
     maxPlayers: state.players.length,
     maxRounds: state.maxRounds,
+    isPrivate: false,
     players: state.players.map((p) => ({ id: p.id, name: p.name, bot: p.bot })),
     version: 1,
     updatedAt: new Date().toISOString(),

@@ -17,7 +17,8 @@ Amplify.configure(outputs);
 const endpoint = outputs.data.url;
 const host = new URL(endpoint).host;
 
-const FIELDS = "gameId name status hostId maxPlayers maxRounds players { id name } version updatedAt state";
+// isPrivate must be selected: the lobby feed only delivers events whose payload says isPrivate: false.
+const FIELDS = "gameId name status hostId isPrivate maxPlayers maxRounds players { id name } version updatedAt state";
 
 async function tokenFor(email) {
   await signOut().catch(() => {});

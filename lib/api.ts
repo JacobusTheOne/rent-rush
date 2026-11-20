@@ -12,6 +12,7 @@ export interface Game {
   hostId: string;
   maxPlayers: number;
   maxRounds: number;
+  isPrivate: boolean;
   players: { id: string; name: string; bot?: boolean | null; guest?: boolean | null }[];
   version: number;
   updatedAt: string;
@@ -47,10 +48,13 @@ async function one(call: Promise<{ data: unknown; errors?: { message: string }[]
  * anonymous identity-pool credentials ("identityPool"). Set once at startup.
  */
 let mode: { authMode: "userPool" | "identityPool" } = { authMode: "userPool" };
+/** Live updates: guests listen with the public API key (see amplify/data/resource.ts). */
+let listenMode: { authMode: "userPool" | "apiKey" } = { authMode: "userPool" };
 let guestName: string | undefined;
 
 export function setGuestMode(name: string | null) {
   mode = { authMode: name ? "identityPool" : "userPool" };
+  listenMode = { authMode: name ? "apiKey" : "userPool" };
   guestName = name ?? undefined;
 }
 
@@ -60,8 +64,8 @@ export const api = {
     return (data ?? []).map(toGame);
   },
   getGame: (gameId: string) => one(client.queries.getGame({ gameId }, mode)),
-  createGame: (name: string, maxPlayers: number, maxRounds: number) =>
-    one(client.mutations.createGame({ name, maxPlayers, maxRounds, playerName: guestName }, mode)),
+  createGame: (name: string, maxPlayers: number, maxRounds: number, isPrivate = false) =>
+    one(client.mutations.createGame({ name, maxPlayers, maxRounds, isPrivate, playerName: guestName }, mode)),
   joinGame: (gameId: string) => one(client.mutations.joinGame({ gameId, playerName: guestName }, mode)),
   leaveGame: (gameId: string) => one(client.mutations.leaveGame({ gameId }, mode)),
   startGame: (gameId: string) => one(client.mutations.startGame({ gameId }, mode)),
@@ -76,7 +80,7 @@ export const api = {
   /** Real-time updates for one game, or for every game when gameId is omitted (lobby). */
   subscribe(gameId: string | undefined, onGame: (g: Game) => void, onError: (e: unknown) => void) {
     const sub = client.subscriptions
-      .onGameUpdated(gameId ? { gameId } : {}, mode)
+      .onGameUpdated(gameId ? { gameId } : {}, listenMode)
       .subscribe({ next: (data) => data && onGame(toGame(data)), error: onError });
     return () => sub.unsubscribe();
   },

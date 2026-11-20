@@ -69,7 +69,11 @@ export default function Home() {
           Header: () => (
             <div className="auth-header">
               <h1>Rent Rush</h1>
-              <p className="muted">Sign in to join the lobby. 2-4 players, real-time.</p>
+              {/^#game=/.test(window.location.hash) ? (
+                <p className="invite-note">You&apos;ve been invited to a game! Sign in or play as a guest to join.</p>
+              ) : (
+                <p className="muted">Sign in to join the lobby. 2-4 players, real-time.</p>
+              )}
             </div>
           ),
           Footer: () => (

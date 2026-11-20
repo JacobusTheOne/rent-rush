@@ -25,6 +25,7 @@ export function Lobby({ me, myName, onOpen }: Props) {
   const [name, setName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [maxRounds, setMaxRounds] = useState<number>(20);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -92,7 +93,7 @@ export function Lobby({ me, myName, onOpen }: Props) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            run(() => api.createGame(name.trim() || `${myName || "My"}'s table`, maxPlayers, maxRounds));
+            run(() => api.createGame(name.trim() || `${myName || "My"}'s table`, maxPlayers, maxRounds, isPrivate));
           }}
         >
           <label>
@@ -126,6 +127,23 @@ export function Lobby({ me, myName, onOpen }: Props) {
               </select>
             </label>
           </div>
+          <fieldset className="visibility">
+            <legend>Who can join</legend>
+            <label className="choice">
+              <input type="radio" name="visibility" checked={!isPrivate} onChange={() => setIsPrivate(false)} />
+              <span>
+                <strong>Public</strong>
+                <span className="muted small"> · listed under Open tables</span>
+              </span>
+            </label>
+            <label className="choice">
+              <input type="radio" name="visibility" checked={isPrivate} onChange={() => setIsPrivate(true)} />
+              <span>
+                <strong>Private</strong>
+                <span className="muted small"> · only people with your invite link</span>
+              </span>
+            </label>
+          </fieldset>
           <button type="submit" disabled={busy}>
             Create table
           </button>
@@ -162,7 +180,7 @@ export function Lobby({ me, myName, onOpen }: Props) {
         {loading ? (
           <p className="muted">Loading…</p>
         ) : open.length === 0 ? (
-          <p className="muted">No open tables right now. Create one and invite friends to sign in.</p>
+          <p className="muted">No open tables right now. Create one and share its invite link with friends.</p>
         ) : (
           <ul className="game-list">
             {open.map((g) => (
@@ -189,6 +207,7 @@ function GameRow({ game, me, children }: { game: Game; me: string; children: Rea
     <li className="game-row">
       <div>
         <strong>{game.name}</strong>
+        {game.isPrivate && <span className="badge">private</span>}
         <div className="muted small">
           {STATUS_LABEL[game.status] ?? game.status} · {game.players.length}/{game.maxPlayers} players ·{" "}
           {game.maxRounds} rounds

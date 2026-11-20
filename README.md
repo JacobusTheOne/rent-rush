@@ -63,6 +63,19 @@ in `public/board/`. See [BOARD-ART.md](BOARD-ART.md) and preview them at `/art-p
 Sound effects are in `public/sound/` (`dice.wav` when dice are rolled, `piece-move.wav` for every
 square a piece moves). Replace them with files of the same name; players can mute with 🔊 in the game.
 
+## Guests, private tables and invite links
+
+- **Guests** play without an account: they pick a name on the sign-in screen and use the
+  browser's anonymous Cognito identity (identity pool, IAM auth). The server knows them as
+  `guest:<identity id>`; their name is cleaned up and can't pose as a bot. Guest identities
+  live in that browser. Live updates for guests use the API's public API key (Amplify doesn't
+  allow identity-pool auth on the custom subscription); it expires after 365 days, so
+  **redeploy (`npm run deploy`) at least once a year**.
+- **Private tables** aren't listed in the lobby (nor in its live updates); everyone else is
+  unaffected. Every waiting table shows an **invite link** (`/#game=<id>`): opening it lets
+  someone sign in or play as a guest and lands them on the table. The id is a random UUID.
+- `scripts/guest-smoke.mjs` tests guests, private tables and invite links end to end.
+
 ## Bots
 
 In the waiting room, the host can click an **Open seat** to fill it with a bot (and remove it with ×).
