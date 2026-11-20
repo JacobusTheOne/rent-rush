@@ -2287,3 +2287,35 @@ dialog.card-stage::backdrop {
   justify-items: center;
   text-align: center;
 }
+
+/* ---------- every hand uses the same small cards ---------- */
+
+/* Your hand (bottom): small cards like the opponents'; hover grows a card upward. */
+.table-me > .my-hand {
+  margin-top: 0;
+}
+
+.table-me .fan.row {
+  padding: 6px 10px 14px;
+}
+
+.fan.row.side-bottom .fan-card {
+  transform-origin: 50% 100%;
+}
+
+.fan.row.side-bottom .fan-card:hover,
+.fan.row.side-bottom .fan-card:focus-visible {
+  transform: translateY(-6px) rotate(0deg) scale(1.8);
+}
+
+/* Side seats: the small fan sits under the nameplate, centred in the column. */
+.seat-left .fan.row,
+.seat-right .fan.row {
+  justify-content: center;
+}
+
+@media (max-width: 520px) {
+  .fan.row.side-bottom .fan-card:hover {
+    transform: translateY(-4px) rotate(0deg) scale(1.6);
+  }
+}

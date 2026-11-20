@@ -113,7 +113,6 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
             player={player}
             position={position}
             me={me}
-            stacked={wide && position !== "top"}
           />
         ))}
         <div className="table-board">

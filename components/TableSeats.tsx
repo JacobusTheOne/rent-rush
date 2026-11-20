@@ -54,14 +54,11 @@ export function OpponentSeat({
   player,
   position,
   me,
-  stacked,
 }: {
   state: GameState;
   player: PlayerState;
   position: SeatPosition;
   me: string;
-  /** Side seats on wide screens: stack the cards vertically beside the board. */
-  stacked: boolean;
 }) {
   const art = useAvailableArt(ART_SRCS);
   const owned = ownedBy(state, player.id);
@@ -81,7 +78,7 @@ export function OpponentSeat({
           owner={player.id}
           ownerName={player.name}
           items={items}
-          variant={stacked ? "column" : "row"}
+          variant="row"
           className={`side-${position}`}
           canManage={false}
           canBuild={false}
@@ -130,10 +127,13 @@ export function MyHand({
   ];
   return (
     <div className="my-hand">
+      {/* Same small cards as everyone else's hand; hover enlarges, click opens the full card. */}
       <CardFan
         state={state}
         owner={player.id}
         items={items}
+        variant="row"
+        className="side-bottom"
         canManage={canManage}
         canBuild={canBuild}
         busy={busy}
