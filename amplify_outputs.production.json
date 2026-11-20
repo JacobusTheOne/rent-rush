@@ -70,6 +70,13 @@
               "type": "Boolean",
               "isRequired": false,
               "attributes": []
+            },
+            "icon": {
+              "name": "icon",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
             }
           }
         },
@@ -315,6 +322,28 @@
               "name": "botId",
               "isArray": false,
               "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "chooseIcon": {
+          "name": "chooseIcon",
+          "isArray": false,
+          "type": {
+            "nonModel": "GameView"
+          },
+          "isRequired": false,
+          "arguments": {
+            "gameId": {
+              "name": "gameId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "icon": {
+              "name": "icon",
+              "isArray": false,
+              "type": "Int",
               "isRequired": true
             }
           }
