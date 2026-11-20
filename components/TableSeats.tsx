@@ -4,6 +4,7 @@ import { DEED_ART, TOKEN_ART } from "@/game/art";
 import { type Action, type GameState, type PlayerState, netWorth, ownedBy } from "@/game/engine";
 import { useAvailableArt } from "@/lib/useArt";
 import { CardFan, type FanItem } from "./CardFan";
+import { CashAmount } from "./MoneyAnimation";
 import { Token } from "./Token";
 
 const ART_SRCS = [...TOKEN_ART, ...Object.values(DEED_ART)].map((a) => a.src);
@@ -42,7 +43,7 @@ export function Nameplate({ state, player, me }: { state: GameState; player: Pla
           {player.bankrupt ? "out of the game" : `worth $${netWorth(state, player.id)}`}
         </span>
       </div>
-      {!player.bankrupt && <span className="cash">${player.cash}</span>}
+      {!player.bankrupt && <CashAmount player={player} />}
       {isTurn && <span className="turn-tag">turn</span>}
     </div>
   );

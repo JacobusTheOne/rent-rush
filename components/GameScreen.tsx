@@ -13,6 +13,7 @@ import { DiceCup, type DiceCupHandle } from "./DiceCup";
 import { MyHand, Nameplate, OpponentSeat, seatOrder } from "./TableSeats";
 import { TradeDialog, TradeOffers } from "./Trades";
 import { Chat } from "./Chat";
+import { CashContext, useMoneyAnimation } from "./MoneyAnimation";
 
 interface Props {
   game: Game;
@@ -31,6 +32,8 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
   const view = useBoardAnimation(state);
   // Hold the turn buttons until the dice and pieces have finished moving.
   const busy = requestBusy || view.animating;
+  // Coins fly between players (and the bank) once the dice and pieces have stopped.
+  const shownCash = useMoneyAnimation(state, view.animating);
   const current = state.players[state.current];
   const mePlayer = state.players.find((p) => p.id === me);
   const paused = state.paused ?? null;
@@ -123,6 +126,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
   );
 
   return (
+    <CashContext.Provider value={shownCash}>
     <div className={`table-view ${wide ? "one-screen" : ""}`}>
       <div className={`table seats-${others.length}`}>
         {!wide && (
@@ -210,6 +214,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
         />
       )}
     </div>
+    </CashContext.Provider>
   );
 }
 
