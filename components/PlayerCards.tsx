@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BOARD, DISTRICTS, RULES, STATION_INDEXES, baseRent, districtSquares, upgradeCost } from "@/game/board";
 import { SQUARE_ART, TOKEN_ART } from "@/game/art";
 import {
@@ -124,6 +124,7 @@ export function Deed({
   square,
   owner,
   image,
+  card = null,
   canManage,
   canBuild,
   busy,
@@ -133,6 +134,8 @@ export function Deed({
   square: number;
   owner: string;
   image: string | null;
+  /** Full title-deed artwork (public/board/deeds); replaces the built-in card when present. */
+  card?: string | null;
   canManage: boolean;
   canBuild: boolean;
   busy: boolean;
@@ -171,6 +174,23 @@ export function Deed({
       ? `${districtSquares(sq.district).filter((i) => state.holdings[i]?.owner === owner).length}/${districtSquares(sq.district).length} of district`
       : null;
 
+  if (card) {
+    return (
+      <DeedCard
+        name={sq.name}
+        card={card}
+        level={level}
+        current={current}
+        districtNote={districtNote}
+        actions={
+          canManage ? (
+            <DeedActions state={state} square={square} owner={owner} canBuild={canBuild} busy={busy} onAction={onAction} />
+          ) : null
+        }
+      />
+    );
+  }
+
   return (
     <li className="deed">
       <div className="deed-head" style={{ background: head.color }}>
@@ -199,7 +219,33 @@ export function Deed({
           Rent now <strong>${current}</strong>
         </div>
         {canManage && (
-          <div className="deed-actions">
+          <DeedActions state={state} square={square} owner={owner} canBuild={canBuild} busy={busy} onAction={onAction} />
+        )}
+      </div>
+    </li>
+  );
+}
+
+function DeedActions({
+  state,
+  square,
+  owner,
+  canBuild,
+  busy,
+  onAction,
+}: {
+  state: GameState;
+  square: number;
+  owner: string;
+  canBuild: boolean;
+  busy: boolean;
+  onAction: (a: Action) => void;
+}) {
+  const sq = BOARD[square];
+  if (sq.kind !== "PROPERTY" && sq.kind !== "STATION") return null;
+  const level = state.holdings[square].level;
+  return (
+    <div className="deed-actions">
             {sq.kind === "PROPERTY" && canBuild && !canUpgrade(state, owner, square) && (
               <button
                 type="button"
@@ -235,8 +281,51 @@ export function Deed({
               </button>
             )}
           </div>
-        )}
+  );
+}
+
+/** A title deed shown as its card artwork, with the live rent and actions underneath. Click to enlarge. */
+function DeedCard({
+  name,
+  card,
+  level,
+  current,
+  districtNote,
+  actions,
+}: {
+  name: string;
+  card: string;
+  level: number;
+  current: number;
+  districtNote: string | null;
+  actions: React.ReactNode;
+}) {
+  const zoom = useRef<HTMLDialogElement>(null);
+  return (
+    <li className="deed has-card">
+      <button type="button" className="deed-card" onClick={() => zoom.current?.showModal()} title={`${name}: click to enlarge`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={card} alt={`${name} title deed`} loading="lazy" />
+        {level > 0 && <span className="deed-level">{"▲".repeat(level)}</span>}
+      </button>
+      <div className="deed-live">
+        <div className="deed-rent">
+          Rent now <strong>${current}</strong>
+          {districtNote && <span className="muted small"> · {districtNote}</span>}
+        </div>
+        {actions}
       </div>
+      <dialog
+        ref={zoom}
+        className="card-zoom"
+        onClick={(e) => e.target === zoom.current && zoom.current.close()}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={card} alt={`${name} title deed`} />
+        <button type="button" className="secondary" onClick={() => zoom.current?.close()}>
+          Close
+        </button>
+      </dialog>
     </li>
   );
 }

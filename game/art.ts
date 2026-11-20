@@ -10,7 +10,7 @@ import { BOARD, DISTRICTS, TOKEN_COLORS, type Square } from "./board";
 
 export const ART_BASE = "/board";
 
-export type ArtKind = "square" | "center" | "background" | "token" | "die" | "card";
+export type ArtKind = "square" | "center" | "background" | "token" | "die" | "card" | "deed";
 
 export interface ArtSpec {
   kind: ArtKind;
@@ -92,6 +92,30 @@ export const CARD_ART: ArtSpec = {
   height: 340,
   label: "Fortune card background (card text is drawn on top)",
 };
+
+/**
+ * Title-deed card images for every street and station, shown in the players' hands.
+ * Made from the full-size originals in cards/ by `npm run art:deeds`.
+ */
+export const DEED_ART: Record<number, ArtSpec> = Object.fromEntries(
+  BOARD.flatMap((sq, i) =>
+    sq.kind === "PROPERTY" || sq.kind === "STATION"
+      ? [
+          [
+            i,
+            {
+              kind: "deed" as const,
+              src: `${ART_BASE}/deeds/${String(i).padStart(2, "0")}-${slug(sq.name)}.jpg`,
+              width: 448,
+              height: 600,
+              label: `Title deed: ${sq.name}`,
+              meta: { name: sq.name, source: `${sq.kind === "STATION" ? "station" : DISTRICTS[sq.district].name.toLowerCase().replace(/ /g, "_")}_${sq.name.toLowerCase().replace(/ /g, "_")}.jpg` },
+            },
+          ],
+        ]
+      : [],
+  ),
+);
 
 export const ALL_ART: ArtSpec[] = [
   BACKGROUND_ART,

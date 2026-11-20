@@ -1080,23 +1080,40 @@ a.link {
 }
 
 .table-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
   gap: 0.5rem;
 }
 
+.table-bar .row {
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.table-bar button {
+  padding: 0.4rem 0.7rem;
+}
+
+/* The board column is as tall as the window allows (minus the site header and the top seat),
+   so it fills a PC screen; the side seats hug it. */
 .table {
+  --board: max(560px, calc(100dvh - 240px));
   display: grid;
-  grid-template-columns: minmax(0, 150px) minmax(0, 1fr) minmax(0, 150px);
+  grid-template-columns: 200px minmax(0, var(--board)) 200px;
   grid-template-areas:
-    ".    top   ."
+    "bar  top   ."
     "left board right"
     "me   me    me";
-  gap: 0.75rem;
+  justify-content: center;
+  gap: 0.75rem 1rem;
   align-items: center;
 }
+
+/* Wider page while playing so the big board fits beside the side seats. */
+.app:has(.table-view) {
+  max-width: 1800px;
+}
+
+.table-bar { grid-area: bar; align-self: start; }
 
 .seat-top { grid-area: top; }
 .seat-left { grid-area: left; }
@@ -1106,8 +1123,7 @@ a.link {
 
 .table-board .board {
   margin-bottom: 0;
-  /* Keep your turn buttons on screen below the board: shrink it on short windows. */
-  max-width: min(760px, max(420px, calc(100dvh - 465px)));
+  max-width: none;
 }
 
 .table-seat {
@@ -1207,6 +1223,10 @@ a.link {
 .seat-top .mini-cards {
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.seat-top .mini-cards > li {
+  width: 150px;
 }
 
 .seat-left .mini-cards,
@@ -1348,7 +1368,7 @@ dialog.deed-dialog::backdrop {
   .seat-left,
   .seat-right {
     grid-area: auto;
-    grid-row: 1;
+    grid-row: 2;
     justify-items: stretch;
   }
 
@@ -1384,6 +1404,19 @@ dialog.deed-dialog::backdrop {
     max-width: 760px;
   }
 
+  .table-bar {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .table-seat {
+    grid-row: 2 !important;
+  }
+
   .table-seat .nameplate {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -1410,5 +1443,171 @@ dialog.deed-dialog::backdrop {
 
   .table-seat .mini-card {
     flex-basis: 100%;
+  }
+}
+
+/* ---------- turn controls in the board centre (wide screens) ---------- */
+
+.hud-slot {
+  width: 100%;
+  display: grid;
+  gap: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.hud-slot .actions p {
+  margin: 0 0 0.5rem;
+}
+
+.hud-slot .row {
+  justify-content: center;
+}
+
+.hud-slot .last-event {
+  text-align: center;
+}
+
+.board-center.has-art .center-hud:has(.hud-slot) {
+  width: 72%;
+  background: rgba(12, 18, 24, 0.95);
+  max-height: 92%;
+  overflow-y: auto;
+}
+
+/* ---------- title-deed card artwork ---------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.my-hand .deeds {
+  grid-auto-columns: 190px;
+}
+
+.deed.has-card {
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  gap: 0.35rem;
+  color: var(--text);
+}
+
+.deed-card {
+  position: relative;
+  display: block;
+  padding: 0;
+  background: none;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease;
+}
+
+.deed-card:hover {
+  transform: translateY(-3px);
+  background: none;
+}
+
+.deed-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 448 / 600;
+}
+
+.deed-level {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #1e2a30;
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  letter-spacing: -0.05em;
+}
+
+.deed-live {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.deed.has-card .deed-rent {
+  font-size: 0.85rem;
+}
+
+.mini-card.has-card {
+  padding-bottom: 0.25rem;
+}
+
+/* The top of the card art: district band and street name. */
+.mini-art {
+  display: block;
+  position: relative;
+  aspect-ratio: 448 / 140;
+  background-size: 100% auto;
+  background-position: top center;
+}
+
+.mini-pips {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  background: #1e2a30;
+  color: var(--gold);
+  font-size: 0.55rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+}
+
+dialog.deed-dialog {
+  width: min(320px, calc(100% - 32px));
+}
+
+dialog.card-zoom {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  width: min(448px, calc(100% - 32px));
+  text-align: center;
+}
+
+dialog.card-zoom::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+dialog.card-zoom img {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 0.6rem;
+}
+
+/* Phones: card art is too small to read in the opponents' rows, so show names instead. */
+@media (max-width: 520px) {
+  .mini-card.has-card .mini-art {
+    display: none;
+  }
+
+  .mini-card.has-card .mini-name.visually-hidden {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  .seat-top .mini-cards > li {
+    width: auto;
   }
 }

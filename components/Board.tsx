@@ -25,7 +25,7 @@ function bg(art: Set<string>, src: string): React.CSSProperties | undefined {
 }
 
 /** view: what to show while animating (lib/useBoardAnimation); omitted = the state as-is. */
-export function Board({ state, view }: { state: GameState; view?: BoardView }) {
+export function Board({ state, view, children }: { state: GameState; view?: BoardView; children?: React.ReactNode }) {
   const art = useAvailableArt(ALL_SRCS);
   const current = state.players[state.current];
   const hasCenter = art.has(CENTER_ART.src);
@@ -134,6 +134,8 @@ export function Board({ state, view }: { state: GameState; view?: BoardView }) {
             <span>Fortune: {state.lastCard}</span>
           </div>
         )}
+        {/* Extra centre content, e.g. the turn controls on wide screens. */}
+        {children && <div className="hud-slot">{children}</div>}
         </div>
       </div>
     </div>

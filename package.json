@@ -15,7 +15,8 @@
     "art:slice": "tsx scripts/print-art-spec.ts | python scripts/slice-board.py",
     "art:tokens": "python scripts/slice-tokens.py",
     "deploy": "node scripts/deploy.mjs",
-    "cards:export": "tsx scripts/export-cards.ts"
+    "cards:export": "tsx scripts/export-cards.ts",
+    "art:deeds": "tsx scripts/print-deed-spec.ts | python scripts/import-deeds.py"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.15.7",

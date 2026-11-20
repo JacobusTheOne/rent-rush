@@ -2,13 +2,14 @@
 
 import { useRef, useState } from "react";
 import { BOARD, DISTRICTS } from "@/game/board";
-import { SQUARE_ART, TOKEN_ART } from "@/game/art";
+import { DEED_ART, SQUARE_ART, TOKEN_ART } from "@/game/art";
 import { type Action, type GameState, type PlayerState, netWorth, ownedBy, rentFor } from "@/game/engine";
 import { useAvailableArt } from "@/lib/useArt";
 import { Deed } from "./PlayerCards";
 import { Token } from "./Token";
 
-const ART_SRCS = [...SQUARE_ART, ...TOKEN_ART].map((a) => a.src);
+const ART_SRCS = [...SQUARE_ART, ...TOKEN_ART, ...Object.values(DEED_ART)].map((a) => a.src);
+const deedSrc = (art: Set<string>, square: number) => (DEED_ART[square] && art.has(DEED_ART[square].src) ? DEED_ART[square].src : null);
 
 export type SeatPosition = "top" | "left" | "right";
 
@@ -76,21 +77,28 @@ export function OpponentSeat({
             const sq = BOARD[i];
             const level = state.holdings[i].level;
             const color = sq.kind === "PROPERTY" ? DISTRICTS[sq.district].color : "#56606a";
+            const card = deedSrc(art, i);
             return (
               <li key={i}>
                 <button
                   type="button"
-                  className="mini-card"
+                  className={`mini-card ${card ? "has-card" : ""}`}
                   title={`${sq.name}: rent $${rentFor(state, i)}. Click for the full card.`}
                   onClick={() => {
                     setShown(i);
                     dialog.current?.showModal();
                   }}
                 >
-                  <span className="mini-band" style={{ background: color }}>
-                    {level > 0 && <span className="pips">{"▲".repeat(level)}</span>}
-                  </span>
-                  <span className="mini-name">{sq.name}</span>
+                  {card ? (
+                    <span className="mini-art" style={{ backgroundImage: `url("${card}")` }} aria-hidden>
+                      {level > 0 && <span className="mini-pips">{"▲".repeat(level)}</span>}
+                    </span>
+                  ) : (
+                    <span className="mini-band" style={{ background: color }}>
+                      {level > 0 && <span className="pips">{"▲".repeat(level)}</span>}
+                    </span>
+                  )}
+                  <span className={`mini-name ${card ? "visually-hidden" : ""}`}>{sq.name}</span>
                   <span className="mini-rent">rent ${rentFor(state, i)}</span>
                 </button>
               </li>
@@ -114,6 +122,7 @@ export function OpponentSeat({
               square={shown}
               owner={player.id}
               image={art.has(SQUARE_ART[shown].src) ? SQUARE_ART[shown].src : null}
+              card={deedSrc(art, shown)}
               canManage={false}
               canBuild={false}
               busy
@@ -170,6 +179,7 @@ export function MyHand({
             square={i}
             owner={player.id}
             image={art.has(SQUARE_ART[i].src) ? SQUARE_ART[i].src : null}
+            card={deedSrc(art, i)}
             canManage={canManage}
             canBuild={canBuild}
             busy={busy}

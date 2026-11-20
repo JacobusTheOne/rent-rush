@@ -5,6 +5,7 @@ import { BOARD, RULES } from "@/game/board";
 import { type Action, type GameState, netWorth } from "@/game/engine";
 import type { Game } from "@/lib/api";
 import { useBoardAnimation } from "@/lib/useBoardAnimation";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { isMuted, onMutedChange, setMuted } from "@/lib/sound";
 import { Board } from "./Board";
 import { MyHand, Nameplate, OpponentSeat, seatOrder } from "./TableSeats";
@@ -30,56 +31,65 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
 
   const { bottom, others } = seatOrder(state, me);
   const lastEvent = state.log.at(-1)?.text;
+  // Wide screens: turn controls sit in the board's centre so the board can be big.
+  const wide = useMediaQuery("(min-width: 1001px)");
+
+  const turnPanel = (
+    <>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="actions">
+        {state.phase === "OVER" ? (
+          <GameOver state={state} onExit={onExit} />
+        ) : myTurn ? (
+          <MyTurn state={state} busy={busy} onAction={onAction} />
+        ) : (
+          <Waiting state={state} canSkip={!!mePlayer && !mePlayer.bankrupt} busy={busy} onAction={onAction} />
+        )}
+        {lastEvent && state.phase !== "OVER" && <p className="last-event muted small">{lastEvent}</p>}
+      </div>
+    </>
+  );
 
   return (
     <div className="table-view">
-      <div className="table-bar">
-        <h2 className="game-name">{game.name}</h2>
-        <div className="row">
-          <button type="button" className="secondary" onClick={onExit}>
-            Lobby
-          </button>
-          <SoundToggle />
-          {mePlayer && !mePlayer.bankrupt && state.phase !== "OVER" && (
-            <button
-              type="button"
-              className="danger"
-              disabled={busy}
-              onClick={() => {
-                if (confirm("Leave the game? You'll forfeit and your properties go back to the bank.")) onLeave();
-              }}
-            >
-              Forfeit
-            </button>
-          )}
-        </div>
-      </div>
-
       <div className={`table seats-${others.length}`}>
+        <div className="table-bar">
+          <h2 className="game-name">{game.name}</h2>
+          <div className="row">
+            <button type="button" className="secondary" onClick={onExit}>
+              Lobby
+            </button>
+            <SoundToggle />
+            {mePlayer && !mePlayer.bankrupt && state.phase !== "OVER" && (
+              <button
+                type="button"
+                className="danger"
+                disabled={busy}
+                onClick={() => {
+                  if (confirm("Leave the game? You'll forfeit and your properties go back to the bank.")) onLeave();
+                }}
+              >
+                Forfeit
+              </button>
+            )}
+          </div>
+        </div>
         {others.map(({ player, position }) => (
           <OpponentSeat key={player.id} state={state} player={player} position={position} me={me} />
         ))}
         <div className="table-board">
-          <Board state={state} view={view} />
+          <Board state={state} view={view}>
+            {wide ? turnPanel : null}
+          </Board>
         </div>
         <section className="table-me" aria-label="Your seat">
           <div className="me-panel">
             <Nameplate state={state} player={bottom} me={me} />
-            {error && (
-              <p className="error" role="alert">
-                {error}
-              </p>
-            )}
-            <div className="panel actions">
-              {state.phase === "OVER" ? (
-                <GameOver state={state} onExit={onExit} />
-              ) : myTurn ? (
-                <MyTurn state={state} busy={busy} onAction={onAction} />
-              ) : (
-                <Waiting state={state} canSkip={!!mePlayer && !mePlayer.bankrupt} busy={busy} onAction={onAction} />
-              )}
-              {lastEvent && state.phase !== "OVER" && <p className="last-event muted small">{lastEvent}</p>}
-            </div>
+            {!wide && <div className="panel">{turnPanel}</div>}
           </div>
           <MyHand state={state} player={bottom} me={me} busy={busy} myTurn={myTurn} onAction={onAction} />
         </section>
