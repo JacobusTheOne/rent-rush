@@ -28,13 +28,15 @@ and the centre is cropped square from the middle. **It overwrites** those 26 fil
 and the Fortune card are separate files that it doesn't touch. Higher-resolution sources give
 sharper squares (each square should ideally be at least 300 px in the source).
 
-### Player tokens from a 2×2 character sheet
+### Player tokens
 
 Players choose their token (an animal) before the game starts. The eight icons are
 `tokens/icon-1-shark.jpg` … `icon-8-meerkat.jpg` (names and order in `TOKEN_ICONS`,
 game/board.ts), each a 256×256 square on white, shown cropped to a circle with the player's
 colour ring. To replace them, cut a new sheet into the same eight files (square, the figure
-centred with a little margin). (`npm run art:tokens` is the older 4-token slicer.)
+centred with a little margin). The current set is cut from an oil-painting sheet of the eight
+animals on white (two rows of four, in `TOKEN_ICONS` order). (`npm run art:tokens` is the older
+4-token slicer.)
 
 ### Templates
 
