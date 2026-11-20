@@ -153,7 +153,6 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
         ))}
         <div className="table-board">
           <BoardViewport
-            follow={view.moving ? view.positions[view.moving] : null}
             overlay={
               <>
                 {!cupFailed && (
