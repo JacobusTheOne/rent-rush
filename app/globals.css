@@ -2038,3 +2038,58 @@ dialog.card-stage::backdrop {
     animation: none;
   }
 }
+
+/* ---------- your seat: centred name + money directly above your hand ---------- */
+
+.table .table-me {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.table-me > .nameplate {
+  position: relative;
+  z-index: 1;
+  min-width: 260px;
+  max-width: 100%;
+}
+
+.table-me > .my-hand {
+  width: 100%;
+  /* Tuck the cards up under the nameplate; the fan's top padding is room for a hovered card to lift. */
+  margin-top: -60px;
+}
+
+.table-me > .my-hand.empty {
+  margin-top: 0;
+  max-width: 520px;
+}
+
+.table-me > .me-turn {
+  width: 100%;
+  max-width: 520px;
+}
+
+@media (max-width: 520px) {
+  .table-me > .my-hand {
+    margin-top: -42px;
+  }
+
+  .table-me > .nameplate {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Room below the fan for its tilted end cards. */
+.table-me .fan {
+  padding-bottom: 30px;
+}
+
+@media (max-width: 520px) {
+  /* Small centre panel: the Fortune text also appears under your turn buttons. */
+  .overlay-hud .card {
+    display: none;
+  }
+}

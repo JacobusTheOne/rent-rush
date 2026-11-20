@@ -124,10 +124,9 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
           </BoardViewport>
         </div>
         <section className="table-me" aria-label="Your seat">
-          <div className="me-panel">
-            <Nameplate state={state} player={bottom} me={me} />
-            {!wide && <div className="panel">{turnPanel}</div>}
-          </div>
+          {!wide && <div className="panel me-turn">{turnPanel}</div>}
+          {/* Your name and money sit centred just above your cards. */}
+          <Nameplate state={state} player={bottom} me={me} />
           <MyHand state={state} player={bottom} me={me} busy={busy} myTurn={myTurn} onAction={onAction} />
         </section>
       </div>
