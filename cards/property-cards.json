@@ -1,0 +1,436 @@
+{
+  "description": "Rent Rush property cards, generated from game/board.ts by `npm run cards:export`. Do not edit by hand.",
+  "notes": {
+    "rent": "Bare rent is 10% of the price; owning both streets of a district doubles it. Upgrades need the whole district and multiply bare rent by 3 / 6 / 10.",
+    "stations": "Station rent depends on how many stations the owner holds.",
+    "sellBack": "Selling to the bank returns 50% of what was paid; a district's upgrades must be sold before its streets.",
+    "homeTurf": "Landing on your own street pays you $20."
+  },
+  "districts": [
+    {
+      "id": "amber",
+      "name": "Old Town",
+      "color": "#c98a3c",
+      "streets": [
+        "Mill Street",
+        "Canal Walk"
+      ]
+    },
+    {
+      "id": "teal",
+      "name": "Harborside",
+      "color": "#2bb3a3",
+      "streets": [
+        "Pine Court",
+        "Harbor View"
+      ]
+    },
+    {
+      "id": "rose",
+      "name": "Lantern Quarter",
+      "color": "#e0608a",
+      "streets": [
+        "Lantern Square",
+        "Velvet Avenue"
+      ]
+    },
+    {
+      "id": "sky",
+      "name": "Hilltop",
+      "color": "#5aa9e6",
+      "streets": [
+        "Cloud Terrace",
+        "Summit Road"
+      ]
+    },
+    {
+      "id": "jade",
+      "name": "Greenbelt",
+      "color": "#3fa34d",
+      "streets": [
+        "Orchard Park",
+        "Willow Drive"
+      ]
+    },
+    {
+      "id": "royal",
+      "name": "Gold Coast",
+      "color": "#8f6bea",
+      "streets": [
+        "Crown Heights",
+        "Golden Mile"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "type": "street",
+      "boardIndex": 1,
+      "name": "Mill Street",
+      "district": {
+        "id": "amber",
+        "name": "Old Town",
+        "color": "#c98a3c"
+      },
+      "partnerStreet": "Canal Walk",
+      "price": 60,
+      "rent": {
+        "bare": 6,
+        "wholeDistrict": 12,
+        "level1": 18,
+        "level2": 36,
+        "level3": 60
+      },
+      "upgradeCost": 30,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 30,
+        "perUpgrade": 15
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/01-mill-street.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 2,
+      "name": "Canal Walk",
+      "district": {
+        "id": "amber",
+        "name": "Old Town",
+        "color": "#c98a3c"
+      },
+      "partnerStreet": "Mill Street",
+      "price": 80,
+      "rent": {
+        "bare": 8,
+        "wholeDistrict": 16,
+        "level1": 24,
+        "level2": 48,
+        "level3": 80
+      },
+      "upgradeCost": 40,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 40,
+        "perUpgrade": 20
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/02-canal-walk.jpg"
+    },
+    {
+      "type": "station",
+      "boardIndex": 4,
+      "name": "North Station",
+      "price": 200,
+      "rent": {
+        "own1": 25,
+        "own2": 50,
+        "own3": 100
+      },
+      "sellBack": {
+        "property": 100
+      },
+      "image": "/board/squares/04-north-station.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 7,
+      "name": "Pine Court",
+      "district": {
+        "id": "teal",
+        "name": "Harborside",
+        "color": "#2bb3a3"
+      },
+      "partnerStreet": "Harbor View",
+      "price": 100,
+      "rent": {
+        "bare": 10,
+        "wholeDistrict": 20,
+        "level1": 30,
+        "level2": 60,
+        "level3": 100
+      },
+      "upgradeCost": 50,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 50,
+        "perUpgrade": 25
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/07-pine-court.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 8,
+      "name": "Harbor View",
+      "district": {
+        "id": "teal",
+        "name": "Harborside",
+        "color": "#2bb3a3"
+      },
+      "partnerStreet": "Pine Court",
+      "price": 120,
+      "rent": {
+        "bare": 12,
+        "wholeDistrict": 24,
+        "level1": 36,
+        "level2": 72,
+        "level3": 120
+      },
+      "upgradeCost": 60,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 60,
+        "perUpgrade": 30
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/08-harbor-view.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 10,
+      "name": "Lantern Square",
+      "district": {
+        "id": "rose",
+        "name": "Lantern Quarter",
+        "color": "#e0608a"
+      },
+      "partnerStreet": "Velvet Avenue",
+      "price": 140,
+      "rent": {
+        "bare": 14,
+        "wholeDistrict": 28,
+        "level1": 42,
+        "level2": 84,
+        "level3": 140
+      },
+      "upgradeCost": 70,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 70,
+        "perUpgrade": 35
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/10-lantern-square.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 11,
+      "name": "Velvet Avenue",
+      "district": {
+        "id": "rose",
+        "name": "Lantern Quarter",
+        "color": "#e0608a"
+      },
+      "partnerStreet": "Lantern Square",
+      "price": 160,
+      "rent": {
+        "bare": 16,
+        "wholeDistrict": 32,
+        "level1": 48,
+        "level2": 96,
+        "level3": 160
+      },
+      "upgradeCost": 80,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 80,
+        "perUpgrade": 40
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/11-velvet-avenue.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 13,
+      "name": "Cloud Terrace",
+      "district": {
+        "id": "sky",
+        "name": "Hilltop",
+        "color": "#5aa9e6"
+      },
+      "partnerStreet": "Summit Road",
+      "price": 180,
+      "rent": {
+        "bare": 18,
+        "wholeDistrict": 36,
+        "level1": 54,
+        "level2": 108,
+        "level3": 180
+      },
+      "upgradeCost": 90,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 90,
+        "perUpgrade": 45
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/13-cloud-terrace.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 14,
+      "name": "Summit Road",
+      "district": {
+        "id": "sky",
+        "name": "Hilltop",
+        "color": "#5aa9e6"
+      },
+      "partnerStreet": "Cloud Terrace",
+      "price": 200,
+      "rent": {
+        "bare": 20,
+        "wholeDistrict": 40,
+        "level1": 60,
+        "level2": 120,
+        "level3": 200
+      },
+      "upgradeCost": 100,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 100,
+        "perUpgrade": 50
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/14-summit-road.jpg"
+    },
+    {
+      "type": "station",
+      "boardIndex": 15,
+      "name": "East Station",
+      "price": 200,
+      "rent": {
+        "own1": 25,
+        "own2": 50,
+        "own3": 100
+      },
+      "sellBack": {
+        "property": 100
+      },
+      "image": "/board/squares/15-east-station.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 16,
+      "name": "Orchard Park",
+      "district": {
+        "id": "jade",
+        "name": "Greenbelt",
+        "color": "#3fa34d"
+      },
+      "partnerStreet": "Willow Drive",
+      "price": 220,
+      "rent": {
+        "bare": 22,
+        "wholeDistrict": 44,
+        "level1": 66,
+        "level2": 132,
+        "level3": 220
+      },
+      "upgradeCost": 110,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 110,
+        "perUpgrade": 55
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/16-orchard-park.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 17,
+      "name": "Willow Drive",
+      "district": {
+        "id": "jade",
+        "name": "Greenbelt",
+        "color": "#3fa34d"
+      },
+      "partnerStreet": "Orchard Park",
+      "price": 240,
+      "rent": {
+        "bare": 24,
+        "wholeDistrict": 48,
+        "level1": 72,
+        "level2": 144,
+        "level3": 240
+      },
+      "upgradeCost": 120,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 120,
+        "perUpgrade": 60
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/17-willow-drive.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 19,
+      "name": "Crown Heights",
+      "district": {
+        "id": "royal",
+        "name": "Gold Coast",
+        "color": "#8f6bea"
+      },
+      "partnerStreet": "Golden Mile",
+      "price": 280,
+      "rent": {
+        "bare": 28,
+        "wholeDistrict": 56,
+        "level1": 84,
+        "level2": 168,
+        "level3": 280
+      },
+      "upgradeCost": 140,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 140,
+        "perUpgrade": 70
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/19-crown-heights.jpg"
+    },
+    {
+      "type": "station",
+      "boardIndex": 21,
+      "name": "South Station",
+      "price": 200,
+      "rent": {
+        "own1": 25,
+        "own2": 50,
+        "own3": 100
+      },
+      "sellBack": {
+        "property": 100
+      },
+      "image": "/board/squares/21-south-station.jpg"
+    },
+    {
+      "type": "street",
+      "boardIndex": 23,
+      "name": "Golden Mile",
+      "district": {
+        "id": "royal",
+        "name": "Gold Coast",
+        "color": "#8f6bea"
+      },
+      "partnerStreet": "Crown Heights",
+      "price": 320,
+      "rent": {
+        "bare": 32,
+        "wholeDistrict": 64,
+        "level1": 96,
+        "level2": 192,
+        "level3": 320
+      },
+      "upgradeCost": 160,
+      "maxLevel": 3,
+      "sellBack": {
+        "property": 160,
+        "perUpgrade": 80
+      },
+      "homeTurfBonus": 20,
+      "image": "/board/squares/23-golden-mile.jpg"
+    }
+  ]
+}
