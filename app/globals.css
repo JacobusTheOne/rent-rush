@@ -1611,3 +1611,173 @@ dialog.card-zoom img {
     width: auto;
   }
 }
+
+/* ---------- your hand: overlapping fan of cards ---------- */
+
+.fan {
+  --card: 170px;
+  list-style: none;
+  margin: 0;
+  /* Room above for a hovered card to lift, and at the sides for the tilted end cards. */
+  padding: 72px 14px 12px;
+  display: grid;
+  justify-content: center;
+}
+
+.my-hand:has(.fan) {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.fan-slot {
+  width: var(--card);
+  position: relative;
+  transition: z-index 0s 0.15s;
+}
+
+.fan-slot:hover,
+.fan-slot:focus-within {
+  z-index: 100 !important;
+  transition: z-index 0s;
+}
+
+.fan-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border-radius: 10px;
+  transform-origin: 50% 100%;
+  transform: translateY(var(--drop)) rotate(var(--tilt));
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease;
+  box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.fan-card:hover,
+.fan-card:focus-visible {
+  background: none;
+  transform: translateY(-34px) rotate(0deg) scale(1.22);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+}
+
+.card-face {
+  display: block;
+  width: 100%;
+  aspect-ratio: 448 / 600;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.card-face.plain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f8f3e6;
+  color: #1e2a30;
+  overflow: hidden;
+  text-align: center;
+  padding-bottom: 0.5rem;
+}
+
+.card-face.plain .plain-head {
+  align-self: stretch;
+  padding: 0.35rem;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-face.plain.large {
+  font-size: 1.4rem;
+}
+
+.fan-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  background: rgba(20, 28, 36, 0.92);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fan-pips {
+  color: var(--gold);
+  margin-right: 0.25rem;
+  letter-spacing: -0.05em;
+}
+
+/* Clicked card: brought to the front, full size. */
+dialog.card-stage {
+  background: none;
+  border: 0;
+  padding: 0;
+  overflow: visible;
+  max-width: none;
+  max-height: none;
+}
+
+dialog.card-stage::backdrop {
+  background: rgba(5, 8, 12, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.stage-card {
+  width: min(448px, calc(100vw - 32px), calc((100dvh - 190px) * 0.7467));
+  display: grid;
+  gap: 0.6rem;
+  justify-items: center;
+  will-change: transform;
+}
+
+.stage-card .card-face {
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+}
+
+.stage-info {
+  width: 100%;
+  display: grid;
+  gap: 0.4rem;
+  justify-items: center;
+  text-align: center;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  margin: 0;
+}
+
+.stage-info .deed-actions {
+  justify-content: center;
+}
+
+.stage-info .deed-actions button {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 520px) {
+  .fan {
+    --card: 112px;
+    padding-top: 52px;
+  }
+
+  .fan-card:hover {
+    transform: translateY(-22px) rotate(0deg) scale(1.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fan-card {
+    transition: none;
+  }
+}

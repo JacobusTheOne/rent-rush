@@ -96,6 +96,19 @@ export default function TablePreview() {
               {n} players
             </button>
           ))}
+          <button
+            type="button"
+            className="secondary"
+            onClick={() =>
+              setState((s) => {
+                const next = structuredClone(s);
+                for (const sq of [7, 8, 10, 11, 13, 14, 21]) next.holdings[sq] = { owner: "p1", level: 0 };
+                return next;
+              })
+            }
+          >
+            Big hand
+          </button>
         </div>
       </header>
       <GameScreen

@@ -5,6 +5,7 @@ import { BOARD, DISTRICTS } from "@/game/board";
 import { DEED_ART, SQUARE_ART, TOKEN_ART } from "@/game/art";
 import { type Action, type GameState, type PlayerState, netWorth, ownedBy, rentFor } from "@/game/engine";
 import { useAvailableArt } from "@/lib/useArt";
+import { CardFan, type FanItem } from "./CardFan";
 import { Deed } from "./PlayerCards";
 import { Token } from "./Token";
 
@@ -169,35 +170,21 @@ export function MyHand({
       </div>
     );
   }
+  const items: FanItem[] = [
+    ...owned.map((i) => ({ key: `sq-${i}`, square: i, card: deedSrc(art, i) })),
+    ...Array.from({ length: player.freeCards }, (_, k) => ({ key: `free-${k}`, square: null, card: null })),
+  ];
   return (
     <div className="my-hand">
-      <ul className="deeds">
-        {owned.map((i) => (
-          <Deed
-            key={i}
-            state={state}
-            square={i}
-            owner={player.id}
-            image={art.has(SQUARE_ART[i].src) ? SQUARE_ART[i].src : null}
-            card={deedSrc(art, i)}
-            canManage={canManage}
-            canBuild={canBuild}
-            busy={busy}
-            onAction={onAction}
-          />
-        ))}
-        {Array.from({ length: player.freeCards }, (_, k) => (
-          <li key={`free-${k}`} className="deed walk-free">
-            <div className="deed-head" style={{ background: "#c9a227" }}>
-              <span>Fortune card</span>
-            </div>
-            <div className="deed-body">
-              <strong>Walk Free</strong>
-              <p className="small">Leave the Holding Cell for free.{mine ? " Use it from your turn panel." : ""}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <CardFan
+        state={state}
+        owner={player.id}
+        items={items}
+        canManage={canManage}
+        canBuild={canBuild}
+        busy={busy}
+        onAction={onAction}
+      />
     </div>
   );
 }

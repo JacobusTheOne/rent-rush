@@ -226,7 +226,7 @@ export function Deed({
   );
 }
 
-function DeedActions({
+export function DeedActions({
   state,
   square,
   owner,
