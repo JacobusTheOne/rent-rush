@@ -11,6 +11,7 @@ import { Board, CenterHud } from "./Board";
 import { BoardViewport } from "./BoardViewport";
 import { DiceCup, type DiceCupHandle } from "./DiceCup";
 import { MyHand, Nameplate, OpponentSeat, seatOrder } from "./TableSeats";
+import { TradeDialog, TradeOffers } from "./Trades";
 
 interface Props {
   game: Game;
@@ -34,6 +35,10 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
   const canRoll = myTurn && state.phase === "ROLL" && !busy;
   // Any human still in the game can pause or resume it.
   const canPause = !!mePlayer && !mePlayer.bankrupt && !mePlayer.bot && state.phase !== "OVER";
+  // Trading: any time while the game runs (not paused), with anyone still in it.
+  const [tradeOpen, setTradeOpen] = useState(false);
+  const canTrade = canPause && !paused && state.players.some((p) => p.id !== me && !p.bankrupt);
+  const incomingTrades = (state.trades ?? []).filter((t) => t.to === me).length;
 
   // 3D dice cup; falls back to the flat dice if the browser can't do 3D.
   const cup = useRef<DiceCupHandle>(null);
@@ -81,6 +86,17 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
               Lobby
             </button>
             <SoundToggle />
+            {canTrade && (
+              <button
+                type="button"
+                className="secondary trade-button"
+                title="Offer a trade: cards and cash for another player's cards and cash"
+                onClick={() => setTradeOpen(true)}
+              >
+                🤝 Trade
+                {incomingTrades > 0 && <span className="count-badge" aria-label={`${incomingTrades} offers for you`}>{incomingTrades}</span>}
+              </button>
+            )}
             {canPause && !paused && (
               <button
                 type="button"
@@ -140,6 +156,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
         </div>
         <section className="table-me" aria-label="Your seat">
           {!wide && <div className="panel me-turn">{turnPanel}</div>}
+          <TradeOffers state={state} me={me} busy={requestBusy} onAction={onAction} />
           {/* Your name and money sit centred just above your cards. */}
           <Nameplate state={state} player={bottom} me={me} />
           <MyHand state={state} player={bottom} me={me} busy={busy} myTurn={myTurn} onAction={onAction} />
@@ -147,6 +164,16 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
       </div>
 
       <Log state={state} />
+      {canTrade && (
+        <TradeDialog
+          state={state}
+          me={me}
+          open={tradeOpen}
+          busy={requestBusy}
+          onClose={() => setTradeOpen(false)}
+          onSend={onAction}
+        />
+      )}
     </div>
   );
 }

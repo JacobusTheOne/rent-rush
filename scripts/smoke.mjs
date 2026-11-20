@@ -158,6 +158,33 @@ console.log(`  ..  played ${steps} actions, round ${game.state.round}; last log:
 check(steps > 5, "turns play through the API");
 check(Object.keys(game.state.holdings).length > 0 || steps >= 40, "someone bought property");
 
+// ---- trading between the two players (cash only if someone has no cards yet)
+if (game.status === "PLAYING" && !game.state.paused) {
+  const owned = (id) =>
+    Object.entries(game.state.holdings)
+      .filter(([sq, h]) => h.owner === id && !Object.values(game.state.holdings).some((x) => x.level > 0))
+      .map(([sq]) => Number(sq));
+  const aCards = owned(A.sub);
+  const bCards = owned(B.sub);
+  const give = { squares: aCards.slice(0, 1), cash: aCards.length ? 0 : 10 };
+  const get = { squares: bCards.slice(0, 1), cash: bCards.length ? 0 : 10 };
+  const aCash = game.state.players.find((p) => p.id === A.sub).cash;
+  if (aCash >= give.cash) {
+    game = await act(A, { type: "PROPOSE_TRADE", to: B.sub, give, get });
+    const trade = game.state.trades?.find((t) => t.from === A.sub && t.to === B.sub);
+    check(!!trade, `A offered B a trade (${JSON.stringify(give)} for ${JSON.stringify(get)})`);
+    rejected = false;
+    try { await act(A, { type: "ACCEPT_TRADE", id: trade.id }); } catch (e) { rejected = /isn't for you/.test(e.message); }
+    check(rejected, "you can't accept your own offer");
+    game = await act(B, { type: "ACCEPT_TRADE", id: trade.id });
+    const ok =
+      give.squares.every((sq) => game.state.holdings[sq].owner === B.sub) &&
+      get.squares.every((sq) => game.state.holdings[sq].owner === A.sub) &&
+      !(game.state.trades ?? []).length;
+    check(ok, "B accepted (out of turn) and the cards/cash changed hands");
+  }
+}
+
 const left = await gql(A, `mutation M($g: String!) { leaveGame(gameId: $g) { ${FIELDS} } }`, { g: gameId });
 check(left.status === "FINISHED" && left.state.winner === B.sub, "A forfeits, B wins, game FINISHED");
 

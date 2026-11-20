@@ -18,6 +18,7 @@ import {
   type Action,
   type Ctx,
   type GameState,
+  type TradeSide,
   RuleError,
   applyAction,
   chooseBotAction,
@@ -394,7 +395,26 @@ function parseAction(raw: unknown): IncomingAction {
   if (square !== undefined && (!Number.isInteger(square) || (square as number) < 0 || (square as number) > 23)) {
     throw new Error("Invalid square");
   }
+  // Trades: copy only the expected fields, in the expected shapes (the engine checks the rules).
+  if (type === "PROPOSE_TRADE") {
+    const { to, give, get } = value as { to?: unknown; give?: unknown; get?: unknown };
+    if (typeof to !== "string" || !to || to.length > 200) throw new Error("Invalid trade partner");
+    return { type, to, give: tradeSide(give), get: tradeSide(get) };
+  }
+  if (type === "ACCEPT_TRADE" || type === "DECLINE_TRADE" || type === "CANCEL_TRADE") {
+    const { id } = value as { id?: unknown };
+    if (!Number.isInteger(id) || (id as number) < 1) throw new Error("Invalid trade");
+    return { type, id: id as number };
+  }
   return { type, square } as Action;
+}
+
+function tradeSide(raw: unknown): TradeSide {
+  const { squares, cash } = (raw ?? {}) as { squares?: unknown; cash?: unknown };
+  if (!Array.isArray(squares) || squares.length > 24) throw new Error("Invalid trade cards");
+  if (!squares.every((sq) => Number.isInteger(sq) && sq >= 0 && sq <= 23)) throw new Error("Invalid trade cards");
+  if (!Number.isInteger(cash) || (cash as number) < 0 || (cash as number) > 1_000_000) throw new Error("Invalid trade cash");
+  return { squares: squares as number[], cash: cash as number };
 }
 
 function str(value: unknown, field: string): string {

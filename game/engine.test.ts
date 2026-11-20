@@ -302,3 +302,107 @@ describe("round limits", () => {
     expect(twoPlayer(0).log[0].text).toMatch(/No round limit/);
   });
 });
+
+describe("trading", () => {
+  const C = { id: "c", name: "Cat" };
+  /** Ann owns Mill Street (1) and Canal Walk (2); Bob owns Pine Court (7). */
+  function withCards(): GameState {
+    const s = newGame([A, B, C], 20, scripted([2, 1]));
+    s.holdings = { "1": { owner: "a", level: 0 }, "2": { owner: "a", level: 0 }, "7": { owner: "b", level: 0 } };
+    return s;
+  }
+  const offer = (s: GameState, from: string, to: string, give: number[], giveCash: number, get: number[], getCash: number) =>
+    applyAction(
+      s,
+      from,
+      { type: "PROPOSE_TRADE", to, give: { squares: give, cash: giveCash }, get: { squares: get, cash: getCash } },
+      scripted([]),
+    );
+  const answer = (s: GameState, id: string, type: string, tradeId: number) =>
+    applyAction(s, id, { type, id: tradeId } as never, scripted([]));
+
+  it("offers, then swaps cards and cash when accepted (out of turn too)", () => {
+    let s = offer(withCards(), "b", "a", [7], 50, [2], 0); // Bob: Pine Court + $50 for Canal Walk
+    expect(s.trades).toHaveLength(1);
+    const id = s.trades![0].id;
+    expect(() => answer(s, "b", "ACCEPT_TRADE", id)).toThrow(/isn't for you/);
+    s = answer(s, "a", "ACCEPT_TRADE", id);
+    expect(s.holdings["2"].owner).toBe("b");
+    expect(s.holdings["7"].owner).toBe("a");
+    expect(s.players.find((p) => p.id === "a")!.cash).toBe(RULES.startingCash + 50);
+    expect(s.players.find((p) => p.id === "b")!.cash).toBe(RULES.startingCash - 50);
+    expect(s.trades).toHaveLength(0);
+    expect(s.log.at(-1)!.text).toMatch(/Trade done/);
+  });
+
+  it("can be declined or cancelled", () => {
+    let s = offer(withCards(), "b", "a", [7], 0, [2], 0);
+    const id = s.trades![0].id;
+    expect(() => answer(s, "a", "CANCEL_TRADE", id)).toThrow(/Only the player who made/);
+    expect(answer(s, "a", "DECLINE_TRADE", id).trades).toHaveLength(0);
+    s = answer(s, "b", "CANCEL_TRADE", id);
+    expect(s.trades).toHaveLength(0);
+    expect(s.holdings["7"].owner).toBe("b");
+  });
+
+  it("rejects bad offers", () => {
+    const s = withCards();
+    expect(() => offer(s, "b", "a", [1], 0, [2], 0)).toThrow(/Bob doesn't own Mill Street/);
+    expect(() => offer(s, "b", "a", [], 0, [2], 0)).toThrow(/Both sides/);
+    expect(() => offer(s, "b", "a", [7], 5000, [2], 0)).toThrow(/doesn't have \$5000/);
+    expect(() => offer(s, "b", "b", [7], 0, [2], 0)).toThrow(/another player/);
+    expect(() => offer(s, "b", "a", [7], -5, [2], 0)).toThrow(/whole amount/);
+    const built = structuredClone(s);
+    built.holdings["1"].level = 1;
+    expect(() => offer(built, "b", "a", [7], 0, [2], 0)).toThrow(/upgrades/);
+  });
+
+  it("checks again on accept: the cash or cards may be gone", () => {
+    let s = offer(withCards(), "b", "a", [7], 1400, [2], 0);
+    const id = s.trades![0].id;
+    s.players.find((p) => p.id === "b")!.cash = 100; // Bob spent it meanwhile
+    expect(() => answer(s, "a", "ACCEPT_TRADE", id)).toThrow(/can't go through.*doesn't have \$1400/);
+  });
+
+  it("a completed trade drops other offers that can no longer work", () => {
+    let s = offer(withCards(), "b", "a", [7], 0, [2], 0);
+    s = offer(s, "c", "a", [], 300, [2], 0); // Cat also wants Canal Walk
+    expect(s.trades).toHaveLength(2);
+    s = answer(s, "a", "ACCEPT_TRADE", s.trades![0].id);
+    expect(s.trades).toHaveLength(0);
+  });
+
+  it("no trading while paused", () => {
+    const s = act(withCards(), "a", "PAUSE");
+    expect(() => offer(s, "b", "a", [7], 0, [2], 0)).toThrow(/paused/);
+  });
+
+  it("bots take good deals, refuse bad ones, and never break up a full district", () => {
+    const bot = { id: "bot", name: "Bot Rex", bot: true };
+    const base = newGame([A, bot], 20, scripted([1]));
+    base.holdings = {
+      "7": { owner: "bot", level: 0 },
+      "1": { owner: "bot", level: 0 },
+      "2": { owner: "bot", level: 0 }, // Old Town complete
+      "10": { owner: "a", level: 0 },
+    };
+    // Lantern Square ($140) + $60 for Pine Court ($100): good for the bot.
+    let s = offer(base, "a", "bot", [10], 60, [7], 0);
+    expect(s.holdings["7"].owner).toBe("a");
+    expect(s.holdings["10"].owner).toBe("bot");
+    // $50 for Pine Court: bad deal.
+    s = offer(base, "a", "bot", [], 50, [7], 0);
+    expect(s.holdings["7"].owner).toBe("bot");
+    expect(s.log.at(-1)!.text).toMatch(/turned the trade down/);
+    // $500 for Mill Street would break up its full Old Town district.
+    s = offer(base, "a", "bot", [], 500, [1], 0);
+    expect(s.holdings["1"].owner).toBe("bot");
+    expect(s.trades ?? []).toHaveLength(0);
+  });
+
+  it("bankruptcy and the end of the game clear open offers", () => {
+    let s = offer(withCards(), "b", "a", [7], 0, [2], 0);
+    s = act(s, "b", "FORFEIT");
+    expect(s.trades).toHaveLength(0);
+  });
+});

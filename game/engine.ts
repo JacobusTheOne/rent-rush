@@ -78,7 +78,29 @@ export interface GameState {
   lastMoves?: Move[];
   /** Set while a player has paused the game: no moves (and no idle skips) until someone resumes. */
   paused?: { by: string; name: string; at: number } | null;
+  /** Open trade offers between players. */
+  trades?: Trade[];
+  tradeSeq?: number;
 }
+
+/** One side of a trade: properties (board squares) and cash. */
+export interface TradeSide {
+  squares: number[];
+  cash: number;
+}
+
+/** `from` offers `give` to `to` in exchange for `get`. */
+export interface Trade {
+  id: number;
+  from: string;
+  to: string;
+  give: TradeSide;
+  get: TradeSide;
+  at: number;
+}
+
+/** Open offers per player, so nobody can flood someone with offers. */
+export const MAX_OPEN_TRADES = 3;
 
 /** One piece movement. steps > 0 walks forward, < 0 walks back, 0 = direct jump. */
 export interface Move {
@@ -103,11 +125,16 @@ export type Action =
   | { type: "FORFEIT" }
   | { type: "SKIP_IDLE" }
   | { type: "PAUSE" }
-  | { type: "RESUME" };
+  | { type: "RESUME" }
+  | { type: "PROPOSE_TRADE"; to: string; give: TradeSide; get: TradeSide }
+  | { type: "ACCEPT_TRADE"; id: number }
+  | { type: "DECLINE_TRADE"; id: number }
+  | { type: "CANCEL_TRADE"; id: number };
 
 export const ACTION_TYPES: ReadonlySet<string> = new Set([
   "ROLL", "BUY", "DECLINE", "PAY_BAIL", "USE_CARD", "UPGRADE", "SELL_UPGRADE",
   "SELL_PROPERTY", "PAY_DEBT", "BANKRUPT", "END_TURN", "FORFEIT", "SKIP_IDLE", "PAUSE", "RESUME",
+  "PROPOSE_TRADE", "ACCEPT_TRADE", "DECLINE_TRADE", "CANCEL_TRADE",
 ]);
 
 export interface Ctx {
@@ -270,6 +297,15 @@ export function applyAction(state: GameState, actorId: string, action: Action, c
   if (s.paused) throw new RuleError(`The game is paused by ${s.paused.name}`);
   if (action.type === "SKIP_IDLE") {
     skipIdle(s, actor, ctx);
+    return s;
+  }
+  // Trading: any player, any time (not only on their turn).
+  if (action.type === "PROPOSE_TRADE") {
+    proposeTrade(s, actor, action, ctx);
+    return s;
+  }
+  if (action.type === "ACCEPT_TRADE" || action.type === "DECLINE_TRADE" || action.type === "CANCEL_TRADE") {
+    answerTrade(s, actor, action.type, action.id);
     return s;
   }
 
@@ -624,6 +660,7 @@ function goBankrupt(s: GameState, p: PlayerState, creditor: string | null, messa
   }
   p.cash = 0;
   p.bankrupt = true;
+  s.trades = (s.trades ?? []).filter((t) => t.from !== p.id && t.to !== p.id);
   // If someone owed this player money, that debt now goes to the Jackpot instead.
   if (s.debt?.to === p.id) s.debt.to = null;
   // Properties return to the bank, unimproved.
@@ -687,9 +724,141 @@ function finishByWorth(s: GameState, reason: string) {
 function finish(s: GameState, winnerId: string, message: string) {
   s.winner = winnerId;
   s.phase = "OVER";
+  s.trades = [];
   s.pendingBuy = null;
   s.debt = null;
   log(s, message);
+}
+
+// ---------------------------------------------------------------- trades
+
+/**
+ * Why this trade can't happen right now, or null if it can. Checked when it's offered and
+ * again when it's accepted (cards or cash may have changed in between).
+ */
+export function tradeProblem(s: GameState, fromId: string, toId: string, give: TradeSide, get: TradeSide): string | null {
+  const from = s.players.find((p) => p.id === fromId);
+  const to = s.players.find((p) => p.id === toId);
+  if (!from || !to || from.id === to.id) return "Pick another player to trade with";
+  if (from.bankrupt || to.bankrupt) return "That player is out of the game";
+  const sides: [TradeSide, PlayerState][] = [[give, from], [get, to]];
+  for (const [side, owner] of sides) {
+    if (!Number.isInteger(side.cash) || side.cash < 0) return "Cash must be a whole amount, 0 or more";
+    if (new Set(side.squares).size !== side.squares.length) return "A card is listed twice";
+    for (const sq of side.squares) {
+      const square = BOARD[sq];
+      if (!square || !isOwnable(square)) return "Only streets and stations can be traded";
+      if (s.holdings[sq]?.owner !== owner.id) return `${owner.name} doesn't own ${square.name}`;
+      if (square.kind === "PROPERTY" && districtSquares(square.district).some((i) => (s.holdings[i]?.level ?? 0) > 0)) {
+        return `${square.name}'s district has upgrades: sell them before trading`;
+      }
+    }
+  }
+  if (give.squares.length + give.cash === 0 || get.squares.length + get.cash === 0) {
+    return "Both sides of a trade need something";
+  }
+  if (from.cash < give.cash) return `${from.name} doesn't have $${give.cash}`;
+  if (to.cash < get.cash) return `${to.name} doesn't have $${get.cash}`;
+  return null;
+}
+
+function proposeTrade(
+  s: GameState,
+  actor: PlayerState,
+  a: Extract<Action, { type: "PROPOSE_TRADE" }>,
+  ctx: Ctx,
+) {
+  const give = { squares: [...a.give.squares], cash: a.give.cash };
+  const get = { squares: [...a.get.squares], cash: a.get.cash };
+  const why = tradeProblem(s, actor.id, a.to, give, get);
+  if (why) throw new RuleError(why);
+  // A new offer to the same player replaces the old one.
+  s.trades = (s.trades ?? []).filter((t) => !(t.from === actor.id && t.to === a.to));
+  if (s.trades.filter((t) => t.from === actor.id).length >= MAX_OPEN_TRADES) {
+    throw new RuleError(`You can have at most ${MAX_OPEN_TRADES} open offers`);
+  }
+  const to = s.players.find((p) => p.id === a.to)!;
+  s.tradeSeq = (s.tradeSeq ?? 0) + 1;
+  const trade: Trade = { id: s.tradeSeq, from: actor.id, to: to.id, give, get, at: ctx.now };
+  log(s, `${actor.name} offered ${to.name} a trade: ${describeSide(give)} for ${describeSide(get)}.`);
+  if (to.bot) {
+    // Bots answer straight away.
+    if (botAcceptsTrade(s, trade)) completeTrade(s, trade);
+    else log(s, `${to.name} turned the trade down.`);
+    return;
+  }
+  s.trades.push(trade);
+}
+
+function answerTrade(s: GameState, actor: PlayerState, type: "ACCEPT_TRADE" | "DECLINE_TRADE" | "CANCEL_TRADE", id: number) {
+  const trade = (s.trades ?? []).find((t) => t.id === id);
+  if (!trade) throw new RuleError("That offer is no longer open");
+  const from = s.players.find((p) => p.id === trade.from)!;
+  const to = s.players.find((p) => p.id === trade.to)!;
+  if (type === "CANCEL_TRADE") {
+    if (actor.id !== trade.from) throw new RuleError("Only the player who made the offer can cancel it");
+    s.trades = s.trades!.filter((t) => t.id !== id);
+    log(s, `${from.name} withdrew the trade offer to ${to.name}.`);
+    return;
+  }
+  if (actor.id !== trade.to) throw new RuleError("This offer isn't for you");
+  if (type === "DECLINE_TRADE") {
+    s.trades = s.trades!.filter((t) => t.id !== id);
+    log(s, `${to.name} turned down ${from.name}'s trade.`);
+    return;
+  }
+  const why = tradeProblem(s, trade.from, trade.to, trade.give, trade.get);
+  if (why) throw new RuleError(`The trade can't go through: ${why}`);
+  completeTrade(s, trade);
+}
+
+function completeTrade(s: GameState, trade: Trade) {
+  const from = s.players.find((p) => p.id === trade.from)!;
+  const to = s.players.find((p) => p.id === trade.to)!;
+  for (const sq of trade.give.squares) s.holdings[sq] = { owner: to.id, level: 0 };
+  for (const sq of trade.get.squares) s.holdings[sq] = { owner: from.id, level: 0 };
+  from.cash += trade.get.cash - trade.give.cash;
+  to.cash += trade.give.cash - trade.get.cash;
+  log(s, `Trade done: ${from.name} gave ${describeSide(trade.give)}, ${to.name} gave ${describeSide(trade.get)}.`);
+  // Drop this offer and any other offer that can no longer work (cards changed hands).
+  s.trades = (s.trades ?? []).filter(
+    (t) =>
+      t.id !== trade.id &&
+      t.give.squares.every((sq) => s.holdings[sq]?.owner === t.from) &&
+      t.get.squares.every((sq) => s.holdings[sq]?.owner === t.to),
+  );
+}
+
+function describeSide(side: TradeSide): string {
+  const parts = side.squares.map((sq) => BOARD[sq].name);
+  if (side.cash > 0) parts.push(`$${side.cash}`);
+  return parts.join(" + ");
+}
+
+/** What a bot thinks a set of cards is worth: the price, plus a bonus for completing a district. */
+function tradeValue(s: GameState, ownerAfter: string, squares: number[]): number {
+  return squares.reduce((sum, sq) => {
+    const square = BOARD[sq] as OwnableSquare;
+    let value = square.price;
+    if (square.kind === "PROPERTY") {
+      const district = districtSquares(square.district);
+      const owned = district.filter((i) => s.holdings[i]?.owner === ownerAfter || squares.includes(i)).length;
+      if (owned === district.length) value *= 1.5; // completes a district for the new owner
+    }
+    return sum + value;
+  }, 0);
+}
+
+/** Bots take a trade worth at least 10% more than what they give up, and never break up a full district. */
+export function botAcceptsTrade(s: GameState, t: Trade): boolean {
+  if (tradeProblem(s, t.from, t.to, t.give, t.get)) return false;
+  const breaksDistrict = t.get.squares.some((sq) => BOARD[sq].kind === "PROPERTY" && ownsDistrict(s, t.to, sq));
+  if (breaksDistrict) return false;
+  const bot = s.players.find((p) => p.id === t.to)!;
+  if (t.get.cash > 0 && bot.cash - t.get.cash < BOT_RESERVE.buy) return false; // keep a cash cushion
+  const receives = tradeValue(s, t.to, t.give.squares) + t.give.cash;
+  const givesUp = t.get.squares.reduce((sum, sq) => sum + (BOARD[sq] as OwnableSquare).price, 0) + t.get.cash;
+  return receives >= givesUp * 1.1;
 }
 
 // ---------------------------------------------------------------- bots
