@@ -79,7 +79,14 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
           </div>
         </div>
         {others.map(({ player, position }) => (
-          <OpponentSeat key={player.id} state={state} player={player} position={position} me={me} />
+          <OpponentSeat
+            key={player.id}
+            state={state}
+            player={player}
+            position={position}
+            me={me}
+            stacked={wide && position !== "top"}
+          />
         ))}
         <div className="table-board">
           <Board state={state} view={view}>

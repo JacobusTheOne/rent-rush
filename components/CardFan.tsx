@@ -13,10 +13,18 @@ export interface FanItem {
   card: string | null;
 }
 
+/** hand: your big fan; row: an opponent's small horizontal fan; column: a vertical stack beside the board. */
+export type FanVariant = "hand" | "row" | "column";
+
 interface Props {
   state: GameState;
   owner: string;
   items: FanItem[];
+  variant?: FanVariant;
+  /** Extra class on the fan, e.g. which side of the table it's on. */
+  className?: string;
+  /** Owner's name, shown in the enlarged view of someone else's card. */
+  ownerName?: string;
   canManage: boolean;
   canBuild: boolean;
   busy: boolean;
@@ -34,7 +42,7 @@ function reducedMotion() {
  * clicking flies it to the middle of the screen at full size, where the
  * Upgrade / Sell buttons are.
  */
-export function CardFan({ state, owner, items, canManage, canBuild, busy, onAction }: Props) {
+export function CardFan({ state, owner, items, variant = "hand", className = "", ownerName, canManage, canBuild, busy, onAction }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const zoomed = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<{ item: FanItem; from: DOMRect } | null>(null);
@@ -78,23 +86,34 @@ export function CardFan({ state, owner, items, canManage, canBuild, busy, onActi
   return (
     <>
       <ul
-        className="fan"
-        // One grid column per card: each card is wider than its column, so it overlaps the next one.
+        className={`fan ${variant} ${className}`}
+        // One grid track per card: each card is bigger than its track, so it overlaps the next one.
         // Columns shrink when space is tight, so a big hand overlaps more instead of scrolling.
-        style={{ gridTemplateColumns: n > 1 ? `repeat(${n - 1}, minmax(0, ${n <= 4 ? 120 : 84}px)) var(--card)` : "var(--card)" }}
-        aria-label="Your cards"
+        // A vertical stack shows the top of each card (district band and name).
+        style={
+          variant === "column"
+            ? { gridTemplateRows: n > 1 ? `repeat(${n - 1}, var(--step)) auto` : "auto" }
+            : {
+                gridTemplateColumns:
+                  n > 1
+                    ? `repeat(${n - 1}, minmax(0, ${variant === "row" ? "var(--step)" : `${n <= 4 ? 120 : 84}px`})) var(--card)`
+                    : "var(--card)",
+              }
+        }
+        aria-label={ownerName ? `${ownerName}'s cards` : "Your cards"}
       >
         {items.map((item, k) => {
           // Fan: tilt and drop the cards away from the middle of the hand.
           const offset = n > 1 ? k - (n - 1) / 2 : 0;
-          const tilt = Math.max(-12, Math.min(12, offset * (n > 6 ? 2 : 3.5)));
+          const spread = variant === "column" ? 0 : variant === "row" ? 2 : n > 6 ? 2 : 3.5;
+          const tilt = Math.max(-12, Math.min(12, offset * spread));
           const label = item.square === null ? "Walk Free card" : BOARD[item.square].name;
           const level = item.square === null ? 0 : (state.holdings[item.square]?.level ?? 0);
           return (
             <li
               key={item.key}
               className="fan-slot"
-              style={{ "--tilt": `${tilt}deg`, "--drop": `${Math.abs(offset) ** 1.4 * 3}px`, zIndex: k + 1 } as React.CSSProperties}
+              style={{ "--tilt": `${tilt}deg`, "--drop": `${variant === "column" ? 0 : Math.abs(offset) ** 1.4 * (variant === "row" ? 1.5 : 3)}px`, zIndex: k + 1 } as React.CSSProperties}
             >
               <button
                 type="button"
@@ -130,6 +149,7 @@ export function CardFan({ state, owner, items, canManage, canBuild, busy, onActi
             <StageInfo
               state={state}
               owner={owner}
+              ownerName={ownerName}
               item={open.item}
               canManage={canManage}
               canBuild={canBuild}
@@ -173,6 +193,7 @@ function CardFace({ item, large = false }: { item: FanItem; large?: boolean }) {
 function StageInfo({
   state,
   owner,
+  ownerName,
   item,
   canManage,
   canBuild,
@@ -181,6 +202,7 @@ function StageInfo({
 }: {
   state: GameState;
   owner: string;
+  ownerName?: string;
   item: FanItem;
   canManage: boolean;
   canBuild: boolean;
@@ -188,11 +210,15 @@ function StageInfo({
   onAction: (a: Action) => void;
 }) {
   if (item.square === null) {
-    return <p className="stage-info muted small">Use it from your turn panel while you're in the Holding Cell.</p>;
+    return (
+      <p className="stage-info muted small">
+        {ownerName ? `${ownerName} can use it to leave the Holding Cell for free.` : "Use it from your turn panel while you're in the Holding Cell."}
+      </p>
+    );
   }
   const square = item.square;
   const sq = BOARD[square];
-  if (!state.holdings[square]) return <p className="stage-info muted small">You no longer own this card.</p>;
+  if (!state.holdings[square]) return <p className="stage-info muted small">{ownerName ? `${ownerName} no longer owns this card.` : "You no longer own this card."}</p>;
   const level = state.holdings[square].level;
   const district =
     sq.kind === "PROPERTY"
@@ -200,6 +226,7 @@ function StageInfo({
       : null;
   return (
     <div className="stage-info">
+      {ownerName && <div className="muted small">Owned by {ownerName}</div>}
       <div>
         Rent now <strong>${rentFor(state, square)}</strong>
         {level > 0 && <span className="muted"> · level {level}</span>}
@@ -207,7 +234,7 @@ function StageInfo({
       </div>
       {canManage ? (
         <DeedActions state={state} square={square} owner={owner} canBuild={canBuild} busy={busy} onAction={onAction} />
-      ) : (
+      ) : ownerName ? null : (
         <span className="muted small">Upgrade or sell during your turn.</span>
       )}
     </div>

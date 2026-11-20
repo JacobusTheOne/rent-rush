@@ -1781,3 +1781,78 @@ dialog.card-stage::backdrop {
     transition: none;
   }
 }
+
+/* ---------- opponents' hands ---------- */
+
+/* Top seat (and every opponent on narrow screens): a small horizontal fan. */
+.fan.row {
+  --card: 96px;
+  --step: 40px;
+  padding: 2px 10px 6px;
+}
+
+.fan.row .fan-card {
+  transform-origin: 50% 0;
+  box-shadow: -2px 3px 8px rgba(0, 0, 0, 0.45);
+}
+
+.fan.row .fan-card:hover,
+.fan.row .fan-card:focus-visible {
+  transform: translateY(6px) rotate(0deg) scale(1.8);
+}
+
+.fan.row .fan-badge,
+.fan.column .fan-badge {
+  font-size: 0.6rem;
+  left: 4px;
+  bottom: 4px;
+  padding: 0 0.35rem;
+}
+
+/* Side seats on wide screens: cards stacked down the side of the board, each showing its
+   district band and name; the last card is fully visible. */
+.fan.column {
+  --step: 58px;
+  grid-template-columns: 100%;
+  padding: 0;
+  justify-content: stretch;
+}
+
+.fan.column .fan-slot {
+  width: 100%;
+  align-self: start;
+}
+
+.fan.column .fan-card {
+  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.fan.column.side-left .fan-card {
+  transform-origin: 0 50%;
+}
+
+.fan.column.side-right .fan-card {
+  transform-origin: 100% 50%;
+}
+
+.fan.column.side-left .fan-card:hover,
+.fan.column.side-left .fan-card:focus-visible {
+  transform: translateX(18px) scale(1.4);
+}
+
+.fan.column.side-right .fan-card:hover,
+.fan.column.side-right .fan-card:focus-visible {
+  transform: translateX(-18px) scale(1.4);
+}
+
+@media (max-width: 520px) {
+  .fan.row {
+    --card: 72px;
+    --step: 26px;
+    padding: 2px 4px 6px;
+  }
+
+  .fan.row .fan-card:hover {
+    transform: translateY(4px) rotate(0deg) scale(1.6);
+  }
+}

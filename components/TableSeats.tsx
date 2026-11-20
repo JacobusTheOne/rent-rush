@@ -1,15 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { BOARD, DISTRICTS } from "@/game/board";
-import { DEED_ART, SQUARE_ART, TOKEN_ART } from "@/game/art";
-import { type Action, type GameState, type PlayerState, netWorth, ownedBy, rentFor } from "@/game/engine";
+import { DEED_ART, TOKEN_ART } from "@/game/art";
+import { type Action, type GameState, type PlayerState, netWorth, ownedBy } from "@/game/engine";
 import { useAvailableArt } from "@/lib/useArt";
 import { CardFan, type FanItem } from "./CardFan";
-import { Deed } from "./PlayerCards";
 import { Token } from "./Token";
 
-const ART_SRCS = [...SQUARE_ART, ...TOKEN_ART, ...Object.values(DEED_ART)].map((a) => a.src);
+const ART_SRCS = [...TOKEN_ART, ...Object.values(DEED_ART)].map((a) => a.src);
 const deedSrc = (art: Set<string>, square: number) => (DEED_ART[square] && art.has(DEED_ART[square].src) ? DEED_ART[square].src : null);
 
 export type SeatPosition = "top" | "left" | "right";
@@ -50,91 +47,47 @@ export function Nameplate({ state, player, me }: { state: GameState; player: Pla
   );
 }
 
-/** An opponent's seat: nameplate plus their cards face up (small; click one for the full deed). */
+/** An opponent's seat: nameplate plus their cards face up, overlapping (click one to read it). */
 export function OpponentSeat({
   state,
   player,
   position,
   me,
+  stacked,
 }: {
   state: GameState;
   player: PlayerState;
   position: SeatPosition;
   me: string;
+  /** Side seats on wide screens: stack the cards vertically beside the board. */
+  stacked: boolean;
 }) {
   const art = useAvailableArt(ART_SRCS);
-  const dialog = useRef<HTMLDialogElement>(null);
-  const [shown, setShown] = useState<number | null>(null);
   const owned = ownedBy(state, player.id);
+  const items: FanItem[] = [
+    ...owned.map((i) => ({ key: `sq-${i}`, square: i, card: deedSrc(art, i) })),
+    ...Array.from({ length: player.freeCards }, (_, k) => ({ key: `free-${k}`, square: null, card: null })),
+  ];
 
   return (
     <section className={`table-seat seat-${position}`} aria-label={`${player.name}'s seat`}>
       <Nameplate state={state} player={player} me={me} />
-      {owned.length === 0 && player.freeCards === 0 ? (
+      {items.length === 0 ? (
         <p className="muted small seat-empty">No cards yet</p>
       ) : (
-        <ul className="mini-cards">
-          {owned.map((i) => {
-            const sq = BOARD[i];
-            const level = state.holdings[i].level;
-            const color = sq.kind === "PROPERTY" ? DISTRICTS[sq.district].color : "#56606a";
-            const card = deedSrc(art, i);
-            return (
-              <li key={i}>
-                <button
-                  type="button"
-                  className={`mini-card ${card ? "has-card" : ""}`}
-                  title={`${sq.name}: rent $${rentFor(state, i)}. Click for the full card.`}
-                  onClick={() => {
-                    setShown(i);
-                    dialog.current?.showModal();
-                  }}
-                >
-                  {card ? (
-                    <span className="mini-art" style={{ backgroundImage: `url("${card}")` }} aria-hidden>
-                      {level > 0 && <span className="mini-pips">{"▲".repeat(level)}</span>}
-                    </span>
-                  ) : (
-                    <span className="mini-band" style={{ background: color }}>
-                      {level > 0 && <span className="pips">{"▲".repeat(level)}</span>}
-                    </span>
-                  )}
-                  <span className={`mini-name ${card ? "visually-hidden" : ""}`}>{sq.name}</span>
-                  <span className="mini-rent">rent ${rentFor(state, i)}</span>
-                </button>
-              </li>
-            );
-          })}
-          {Array.from({ length: player.freeCards }, (_, k) => (
-            <li key={`free-${k}`}>
-              <span className="mini-card walk-free" title="Walk Free card: leave the Holding Cell for free">
-                <span className="mini-band" style={{ background: "#c9a227" }} />
-                <span className="mini-name">Walk Free</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <CardFan
+          state={state}
+          owner={player.id}
+          ownerName={player.name}
+          items={items}
+          variant={stacked ? "column" : "row"}
+          className={`side-${position}`}
+          canManage={false}
+          canBuild={false}
+          busy
+          onAction={() => {}}
+        />
       )}
-      <dialog ref={dialog} className="deed-dialog" onClose={() => setShown(null)} onClick={(e) => e.target === dialog.current && dialog.current.close()}>
-        {shown !== null && state.holdings[shown] && (
-          <ul className="deeds single">
-            <Deed
-              state={state}
-              square={shown}
-              owner={player.id}
-              image={art.has(SQUARE_ART[shown].src) ? SQUARE_ART[shown].src : null}
-              card={deedSrc(art, shown)}
-              canManage={false}
-              canBuild={false}
-              busy
-              onAction={() => {}}
-            />
-          </ul>
-        )}
-        <button type="button" className="secondary" onClick={() => dialog.current?.close()}>
-          Close
-        </button>
-      </dialog>
     </section>
   );
 }
