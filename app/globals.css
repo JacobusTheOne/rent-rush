@@ -344,18 +344,6 @@ input:-webkit-autofill:focus {
 
 /* ---------- game ---------- */
 
-.game {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 1rem;
-  align-items: start;
-}
-
-.sidebar {
-  display: grid;
-  gap: 0.75rem;
-}
-
 .game-name {
   margin: 0;
 }
@@ -599,10 +587,6 @@ dialog.rules li {
 /* ---------- small screens ---------- */
 
 @media (max-width: 900px) {
-  .game {
-    grid-template-columns: 1fr;
-  }
-
   .lobby {
     grid-template-columns: 1fr;
   }
@@ -1085,5 +1069,346 @@ a.link {
   .dice.rolling .die-glyph,
   .square .tokens .token.hop {
     animation: none;
+  }
+}
+
+/* ---------- table layout: board in the middle, players seated around it ---------- */
+
+.table-view {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.table-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.table {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr) minmax(0, 150px);
+  grid-template-areas:
+    ".    top   ."
+    "left board right"
+    "me   me    me";
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.seat-top { grid-area: top; }
+.seat-left { grid-area: left; }
+.seat-right { grid-area: right; }
+.table-board { grid-area: board; min-width: 0; }
+.table-me { grid-area: me; }
+
+.table-board .board {
+  margin-bottom: 0;
+  /* Keep your turn buttons on screen below the board: shrink it on short windows. */
+  max-width: min(760px, max(420px, calc(100dvh - 465px)));
+}
+
+.table-seat {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+  min-width: 0;
+}
+
+.seat-top {
+  justify-items: center;
+}
+
+.seat-left,
+.seat-right {
+  align-self: stretch;
+  align-content: center;
+}
+
+.nameplate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-width: 0;
+  position: relative;
+}
+
+.nameplate.turn {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 14px rgba(242, 201, 76, 0.35);
+}
+
+.nameplate.out {
+  opacity: 0.45;
+}
+
+.nameplate-text {
+  display: grid;
+  min-width: 0;
+}
+
+.nameplate .pname {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameplate .token.has-art {
+  width: 34px;
+  height: 34px;
+}
+
+.turn-tag {
+  position: absolute;
+  top: -0.55rem;
+  right: 0.5rem;
+  background: var(--gold);
+  color: #2a2200;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+}
+
+/* Side seats are narrow: stack name, cash and worth. */
+.seat-left .nameplate,
+.seat-right .nameplate {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.seat-left .nameplate .cash,
+.seat-right .nameplate .cash {
+  grid-column: 1 / -1;
+}
+
+.seat-empty {
+  margin: 0;
+  text-align: center;
+}
+
+.mini-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.seat-top .mini-cards {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.seat-left .mini-cards,
+.seat-right .mini-cards {
+  flex-direction: column;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.mini-card {
+  display: grid;
+  width: 100%;
+  min-width: 96px;
+  padding: 0 0 0.3rem;
+  background: #f8f3e6;
+  color: #1e2a30;
+  border-radius: 7px;
+  overflow: hidden;
+  text-align: left;
+  font-weight: 400;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.mini-card:hover {
+  background: #fffaf0;
+  transform: translateY(-1px);
+}
+
+.mini-band {
+  display: block;
+  height: 10px;
+  color: #fff;
+  font-size: 0.55rem;
+  line-height: 10px;
+  text-align: right;
+  padding-right: 0.3rem;
+}
+
+.mini-name {
+  padding: 0.2rem 0.4rem 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.mini-rent {
+  padding: 0 0.4rem;
+  font-size: 0.66rem;
+  color: #5b6a72;
+}
+
+.mini-card.walk-free {
+  cursor: default;
+}
+
+/* Your seat: turn controls on the left, your hand of full cards on the right. */
+.table-me {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.me-panel,
+.my-hand {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.last-event {
+  margin: 0.6rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.my-hand .deeds {
+  grid-auto-flow: column;
+  grid-template-columns: none;
+  grid-auto-columns: 158px;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 0.4rem;
+}
+
+.my-hand.empty {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+}
+
+.log summary {
+  cursor: pointer;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.log[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+dialog.deed-dialog {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  width: min(240px, calc(100% - 32px));
+}
+
+dialog.deed-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.deeds.single {
+  grid-template-columns: 1fr;
+  margin-bottom: 0.75rem;
+}
+
+/* Narrower screens: opponents sit in a row above the board, your seat below. */
+@media (max-width: 1000px) {
+  .table {
+    grid-template-columns: repeat(var(--opponents, 3), minmax(0, 1fr));
+    grid-template-areas: none;
+    align-items: start;
+  }
+
+  .table.seats-1 { --opponents: 1; }
+  .table.seats-2 { --opponents: 2; }
+
+  .seat-top,
+  .seat-left,
+  .seat-right {
+    grid-area: auto;
+    grid-row: 1;
+    justify-items: stretch;
+  }
+
+  .seat-left { grid-column: 1; }
+  .seat-top { grid-column: 2; }
+  .seat-right { grid-column: 3; }
+  .seats-1 .seat-top { grid-column: 1; }
+  .seats-2 .seat-right { grid-column: 2; }
+
+  .table-board,
+  .table-me {
+    grid-area: auto;
+    grid-column: 1 / -1;
+  }
+
+  .table-seat .mini-cards {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: none;
+  }
+
+  .table-seat .mini-card {
+    width: auto;
+    min-width: 0;
+    flex: 1 1 90px;
+  }
+
+  .table-me {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .table-board .board {
+    max-width: 760px;
+  }
+
+  .table-seat .nameplate {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .table-seat .nameplate .cash {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .table {
+    gap: 0.5rem;
+  }
+
+  .table-seat .nameplate {
+    padding: 0.35rem 0.4rem;
+    gap: 0.1rem 0.3rem;
+  }
+
+  .table-seat .nameplate .token.has-art {
+    width: 24px;
+    height: 24px;
+  }
+
+  .table-seat .mini-card {
+    flex-basis: 100%;
   }
 }

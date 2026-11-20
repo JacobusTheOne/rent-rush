@@ -2,17 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { BOARD, RULES } from "@/game/board";
-import { TOKEN_ART } from "@/game/art";
 import { type Action, type GameState, netWorth } from "@/game/engine";
 import type { Game } from "@/lib/api";
-import { useAvailableArt } from "@/lib/useArt";
 import { useBoardAnimation } from "@/lib/useBoardAnimation";
 import { isMuted, onMutedChange, setMuted } from "@/lib/sound";
 import { Board } from "./Board";
-import { PlayerCards } from "./PlayerCards";
-import { Token } from "./Token";
-
-const TOKEN_SRCS = TOKEN_ART.map((a) => a.src);
+import { MyHand, Nameplate, OpponentSeat, seatOrder } from "./TableSeats";
 
 interface Props {
   game: Game;
@@ -33,30 +28,13 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
   const mePlayer = state.players.find((p) => p.id === me);
   const myTurn = current.id === me && state.phase !== "OVER";
 
+  const { bottom, others } = seatOrder(state, me);
+  const lastEvent = state.log.at(-1)?.text;
+
   return (
-    <div className="game">
-      <div className="game-board">
-        <Board state={state} view={view} />
-      </div>
-      <aside className="sidebar">
+    <div className="table-view">
+      <div className="table-bar">
         <h2 className="game-name">{game.name}</h2>
-        <Players state={state} me={me} />
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="panel actions">
-          {state.phase === "OVER" ? (
-            <GameOver state={state} onExit={onExit} />
-          ) : myTurn ? (
-            <MyTurn state={state} busy={busy} onAction={onAction} />
-          ) : (
-            <Waiting state={state} canSkip={!!mePlayer && !mePlayer.bankrupt} busy={busy} onAction={onAction} />
-          )}
-        </div>
-        <PlayerCards state={state} me={me} busy={busy} myTurn={myTurn} onAction={onAction} />
-        <Log state={state} />
         <div className="row">
           <button type="button" className="secondary" onClick={onExit}>
             Lobby
@@ -75,7 +53,39 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
             </button>
           )}
         </div>
-      </aside>
+      </div>
+
+      <div className={`table seats-${others.length}`}>
+        {others.map(({ player, position }) => (
+          <OpponentSeat key={player.id} state={state} player={player} position={position} me={me} />
+        ))}
+        <div className="table-board">
+          <Board state={state} view={view} />
+        </div>
+        <section className="table-me" aria-label="Your seat">
+          <div className="me-panel">
+            <Nameplate state={state} player={bottom} me={me} />
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
+            <div className="panel actions">
+              {state.phase === "OVER" ? (
+                <GameOver state={state} onExit={onExit} />
+              ) : myTurn ? (
+                <MyTurn state={state} busy={busy} onAction={onAction} />
+              ) : (
+                <Waiting state={state} canSkip={!!mePlayer && !mePlayer.bankrupt} busy={busy} onAction={onAction} />
+              )}
+              {lastEvent && state.phase !== "OVER" && <p className="last-event muted small">{lastEvent}</p>}
+            </div>
+          </div>
+          <MyHand state={state} player={bottom} me={me} busy={busy} myTurn={myTurn} onAction={onAction} />
+        </section>
+      </div>
+
+      <Log state={state} />
     </div>
   );
 }
@@ -98,31 +108,6 @@ function SoundToggle() {
     >
       {muted ? "🔇" : "🔊"}
     </button>
-  );
-}
-
-function Players({ state, me }: { state: GameState; me: string }) {
-  const art = useAvailableArt(TOKEN_SRCS);
-  return (
-    <ul className="players">
-      {state.players.map((p, i) => (
-        <li
-          key={p.id}
-          className={`player ${i === state.current && state.phase !== "OVER" ? "turn" : ""} ${p.bankrupt ? "out" : ""}`}
-        >
-          <Token index={p.token} art={art} />
-          <span className="pname">
-            {p.name}
-            {p.id === me && <span className="badge you">you</span>}
-            {p.bot && <span className="badge">🤖 bot</span>}
-            {p.inCell && <span className="badge">in cell</span>}
-            {p.freeCards > 0 && <span className="badge">walk free ×{p.freeCards}</span>}
-          </span>
-          <span className="cash">{p.bankrupt ? "out" : `$${p.cash}`}</span>
-          {!p.bankrupt && <span className="worth muted small">worth ${netWorth(state, p.id)}</span>}
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -283,13 +268,13 @@ function GameOver({ state, onExit }: { state: GameState; onExit: () => void }) {
 
 function Log({ state }: { state: GameState }) {
   return (
-    <div className="panel log">
-      <h3>Game log</h3>
+    <details className="panel log">
+      <summary>Game log ({state.log.length})</summary>
       <ol reversed>
         {[...state.log].reverse().map((e) => (
           <li key={e.n}>{e.text}</li>
         ))}
       </ol>
-    </div>
+    </details>
   );
 }

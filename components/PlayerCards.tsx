@@ -119,7 +119,7 @@ export function PlayerCards({ state, me, busy, myTurn, onAction }: Props) {
   );
 }
 
-function Deed({
+export function Deed({
   state,
   square,
   owner,
