@@ -2454,14 +2454,15 @@ dialog.trade-dialog::backdrop {
 
 /* ---------- table chat ---------- */
 
+/* Bottom-left: the bottom-right corner is where hosting toolbars (e.g. Netlify's) sit. */
 .chat {
   position: fixed;
-  right: 16px;
+  left: 16px;
   bottom: 16px;
   z-index: 50;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.5rem;
   pointer-events: none;
 }
@@ -2578,7 +2579,7 @@ dialog.trade-dialog::backdrop {
 .chat-preview {
   max-width: min(300px, calc(100vw - 32px));
   padding: 0.45rem 0.7rem;
-  border-radius: 12px 12px 4px 12px;
+  border-radius: 12px 12px 12px 4px;
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
@@ -2602,7 +2603,7 @@ dialog.trade-dialog::backdrop {
 
 @media (max-width: 520px) {
   .chat {
-    right: 12px;
+    left: 12px;
     bottom: 12px;
   }
 
