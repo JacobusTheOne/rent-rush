@@ -3085,3 +3085,12 @@ dialog.trade-dialog::backdrop {
 .one-screen .fan.column.side-right .fan-slot:is(:hover, :focus-within) > .fan-visual {
   transform: translateX(-6px) scale(1.8);
 }
+
+/* With a mouse, a hovered card at either end of your hand grows past the hand's edges: don't
+   cut it off. (Touch screens have no hover; they keep the clip so tilted end cards can't make
+   the page scroll sideways.) */
+@media (hover: hover) and (pointer: fine) {
+  .my-hand:has(.fan) {
+    overflow: visible;
+  }
+}
