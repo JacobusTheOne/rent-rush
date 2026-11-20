@@ -46,6 +46,9 @@ export function CardFan({ state, owner, items, variant = "hand", className = "",
   const dialog = useRef<HTMLDialogElement>(null);
   const zoomed = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<{ item: FanItem; from: DOMRect } | null>(null);
+  // Opened with a mouse/touch click (not Enter/Space)? Then closing shouldn't leave keyboard focus on
+  // the card, or it would stay enlarged as if hovered.
+  const byPointer = useRef(false);
 
   // Transform that puts the big card exactly over the small one it came from.
   const fromTransform = (from: DOMRect) => {
@@ -121,7 +124,10 @@ export function CardFan({ state, owner, items, variant = "hand", className = "",
                 type="button"
                 className="fan-card"
                 aria-label={`${label}: open card`}
-                onClick={(e) => show(item, e.currentTarget)}
+                onClick={(e) => {
+                  byPointer.current = e.detail > 0;
+                  show(item, e.currentTarget);
+                }}
               />
               {/* What you see: lifts and enlarges on hover, but lets the mouse pass through. */}
               <span className="fan-visual" aria-hidden>
@@ -140,7 +146,11 @@ export function CardFan({ state, owner, items, variant = "hand", className = "",
       <dialog
         ref={dialog}
         className="card-stage"
-        onClose={() => setOpen(null)}
+        onClose={() => {
+          setOpen(null);
+          // The browser hands focus back to the card that opened the window; drop it for mouse users.
+          if (byPointer.current) requestAnimationFrame(() => (document.activeElement as HTMLElement | null)?.blur());
+        }}
         onCancel={(e) => {
           e.preventDefault();
           hide();

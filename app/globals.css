@@ -1676,7 +1676,7 @@ dialog.card-zoom img {
   box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.45);
 }
 
-.fan-slot:is(:hover, :focus-within) > .fan-visual {
+.fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
   z-index: 100;
   transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease, z-index 0s;
   transform: translateY(-34px) rotate(0deg) scale(1.22);
@@ -1798,14 +1798,14 @@ dialog.card-stage::backdrop {
     padding-top: 52px;
   }
 
-  .fan-slot:is(:hover, :focus-within) > .fan-visual {
+  .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
     transform: translateY(-22px) rotate(0deg) scale(1.18);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .fan-visual,
-  .fan-slot:is(:hover, :focus-within) > .fan-visual {
+  .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
     transition: none;
   }
 }
@@ -1827,7 +1827,7 @@ dialog.card-stage::backdrop {
   box-shadow: -2px 3px 8px rgba(0, 0, 0, 0.45);
 }
 
-.fan.row .fan-slot:is(:hover, :focus-within) > .fan-visual {
+.fan.row .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
   transform: translateY(6px) rotate(0deg) scale(1.8);
 }
 
@@ -1865,11 +1865,11 @@ dialog.card-stage::backdrop {
   transform-origin: 100% 50%;
 }
 
-.fan.column.side-left .fan-slot:is(:hover, :focus-within) > .fan-visual {
+.fan.column.side-left .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
   transform: translateX(18px) scale(1.4);
 }
 
-.fan.column.side-right .fan-slot:is(:hover, :focus-within) > .fan-visual {
+.fan.column.side-right .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
   transform: translateX(-18px) scale(1.4);
 }
 
@@ -1880,7 +1880,7 @@ dialog.card-stage::backdrop {
     padding: 2px 4px 6px;
   }
 
-  .fan.row .fan-slot:is(:hover, :focus-within) > .fan-visual {
+  .fan.row .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
     transform: translateY(4px) rotate(0deg) scale(1.6);
   }
 }
@@ -2331,7 +2331,7 @@ dialog.card-stage::backdrop {
   transform-origin: 50% 100%;
 }
 
-.fan.row.side-bottom .fan-slot:is(:hover, :focus-within) > .fan-visual {
+.fan.row.side-bottom .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
   transform: translateY(-6px) rotate(0deg) scale(1.8);
 }
 
@@ -2342,7 +2342,7 @@ dialog.card-stage::backdrop {
 }
 
 @media (max-width: 520px) {
-  .fan.row.side-bottom .fan-slot:is(:hover, :focus-within) > .fan-visual {
+  .fan.row.side-bottom .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
     transform: translateY(-4px) rotate(0deg) scale(1.6);
   }
 }
@@ -3078,11 +3078,11 @@ dialog.trade-dialog::backdrop {
   --step: calc(var(--hand-card) * 0.45);
 }
 
-.one-screen .fan.column.side-left .fan-slot:is(:hover, :focus-within) > .fan-visual {
+.one-screen .fan.column.side-left .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
   transform: translateX(6px) scale(1.8);
 }
 
-.one-screen .fan.column.side-right .fan-slot:is(:hover, :focus-within) > .fan-visual {
+.one-screen .fan.column.side-right .fan-slot:is(:hover, :has(> .fan-card:focus-visible)) > .fan-visual {
   transform: translateX(-6px) scale(1.8);
 }
 
