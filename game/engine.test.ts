@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { RULES } from "./board";
+import { BOARD, RULES, districtSquares, isOwnable } from "./board";
+
+/** Gives every unowned street and station to `owner`, so nothing is left to buy. */
+function fillBoard(s: GameState, owner: string) {
+  BOARD.forEach((sq, i) => {
+    if (isOwnable(sq) && !s.holdings[i]) s.holdings[i] = { owner, level: 0 };
+  });
+}
 import { type Ctx, type GameState, RuleError, applyAction, chooseBotAction, newGame, netWorth, rentFor } from "./engine";
 
 /** rng that returns scripted values (dice values are value-1), then 0s. */
@@ -320,9 +327,30 @@ describe("trading", () => {
     );
   const answer = (s: GameState, id: string, type: string, tradeId: number) =>
     applyAction(s, id, { type, id: tradeId } as never, scripted([]));
+  /** Make it this player's turn (offers can only be made on your own turn). */
+  const turnOf = (s: GameState, id: string) => {
+    const t = structuredClone(s);
+    t.current = t.players.findIndex((p) => p.id === id);
+    return t;
+  };
+  const bobs = () => turnOf(withCards(), "b");
+
+  it("offers can only be made on your turn, and expire when it ends", () => {
+    const s0 = withCards();
+    const notCurrent = s0.players.find((p) => p.id !== s0.players[s0.current].id)!.id;
+    expect(() => offer(s0, notCurrent, "a", [7], 0, [2], 0)).toThrow(/on your turn/);
+    // Bob offers on his turn; Ann can still answer while it's open, even though it's not her turn.
+    let s = offer(bobs(), "b", "a", [7], 0, [2], 0);
+    expect(s.trades).toHaveLength(1);
+    // Bob ends his turn without an answer: the offer is withdrawn.
+    s.phase = "END";
+    s = act(s, "b", "END_TURN");
+    expect(s.trades).toHaveLength(0);
+    expect(s.log.some((e) => /trade offer expired/.test(e.text))).toBe(true);
+  });
 
   it("offers, then swaps cards and cash when accepted (out of turn too)", () => {
-    let s = offer(withCards(), "b", "a", [7], 50, [2], 0); // Bob: Pine Court + $50 for Canal Walk
+    let s = offer(bobs(), "b", "a", [7], 50, [2], 0); // Bob: Pine Court + $50 for Canal Walk
     expect(s.trades).toHaveLength(1);
     const id = s.trades![0].id;
     expect(() => answer(s, "b", "ACCEPT_TRADE", id)).toThrow(/isn't for you/);
@@ -336,7 +364,7 @@ describe("trading", () => {
   });
 
   it("can be declined or cancelled", () => {
-    let s = offer(withCards(), "b", "a", [7], 0, [2], 0);
+    let s = offer(bobs(), "b", "a", [7], 0, [2], 0);
     const id = s.trades![0].id;
     expect(() => answer(s, "a", "CANCEL_TRADE", id)).toThrow(/Only the player who made/);
     expect(answer(s, "a", "DECLINE_TRADE", id).trades).toHaveLength(0);
@@ -346,7 +374,7 @@ describe("trading", () => {
   });
 
   it("rejects bad offers", () => {
-    const s = withCards();
+    const s = bobs();
     expect(() => offer(s, "b", "a", [1], 0, [2], 0)).toThrow(/Bob doesn't own Mill Street/);
     expect(() => offer(s, "b", "a", [], 0, [2], 0)).toThrow(/Both sides/);
     expect(() => offer(s, "b", "a", [7], 5000, [2], 0)).toThrow(/doesn't have \$5000/);
@@ -358,22 +386,22 @@ describe("trading", () => {
   });
 
   it("checks again on accept: the cash or cards may be gone", () => {
-    let s = offer(withCards(), "b", "a", [7], 1400, [2], 0);
+    let s = offer(bobs(), "b", "a", [7], 1400, [2], 0);
     const id = s.trades![0].id;
     s.players.find((p) => p.id === "b")!.cash = 100; // Bob spent it meanwhile
     expect(() => answer(s, "a", "ACCEPT_TRADE", id)).toThrow(/can't go through.*doesn't have \$1400/);
   });
 
   it("a completed trade drops other offers that can no longer work", () => {
-    let s = offer(withCards(), "b", "a", [7], 0, [2], 0);
-    s = offer(s, "c", "a", [], 300, [2], 0); // Cat also wants Canal Walk
+    let s = offer(bobs(), "b", "a", [7], 0, [2], 0);
+    s = offer(turnOf(s, "c"), "c", "a", [], 300, [2], 0); // Cat also wants Canal Walk
     expect(s.trades).toHaveLength(2);
     s = answer(s, "a", "ACCEPT_TRADE", s.trades![0].id);
     expect(s.trades).toHaveLength(0);
   });
 
   it("no trading while paused", () => {
-    const s = act(withCards(), "a", "PAUSE");
+    const s = act(bobs(), "a", "PAUSE");
     expect(() => offer(s, "b", "a", [7], 0, [2], 0)).toThrow(/paused/);
   });
 
@@ -386,6 +414,7 @@ describe("trading", () => {
       "2": { owner: "bot", level: 0 }, // Old Town complete
       "10": { owner: "a", level: 0 },
     };
+    fillBoard(base, "a"); // nothing left to buy: the bot judges trades on value
     // Lantern Square ($140) + $60 for Pine Court ($100): good for the bot.
     let s = offer(base, "a", "bot", [10], 60, [7], 0);
     expect(s.holdings["7"].owner).toBe("a");
@@ -400,8 +429,25 @@ describe("trading", () => {
     expect(s.trades ?? []).toHaveLength(0);
   });
 
+  it("bots don't trade cards while they can still complete a district by buying", () => {
+    const bot = { id: "bot", name: "Bot Rex", bot: true };
+    const base = newGame([A, bot], 20, scripted([1]));
+    // Bot has Pine Court; the rest of Harborside is still for sale.
+    base.holdings = { "7": { owner: "bot", level: 0 }, "10": { owner: "a", level: 0 } };
+    const generous = (s: GameState) => offer(s, "a", "bot", [10], 400, [7], 0);
+    expect(generous(base).holdings["7"].owner).toBe("bot"); // refused
+    // The rest of Harborside is now owned by Ann, but another district is still wholly for sale.
+    const partly = structuredClone(base);
+    for (const sq of districtSquares("teal")) if (sq !== 7) partly.holdings[sq] = { owner: "a", level: 0 };
+    expect(generous(partly).holdings["7"].owner).toBe("bot"); // still refused
+    // Nothing left that the bot could complete by buying: now it takes the good deal.
+    const full = structuredClone(partly);
+    fillBoard(full, "a");
+    expect(generous(full).holdings["7"].owner).toBe("a");
+  });
+
   it("bankruptcy and the end of the game clear open offers", () => {
-    let s = offer(withCards(), "b", "a", [7], 0, [2], 0);
+    let s = offer(bobs(), "b", "a", [7], 0, [2], 0);
     s = act(s, "b", "FORFEIT");
     expect(s.trades).toHaveLength(0);
   });

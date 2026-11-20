@@ -38,9 +38,9 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
   const canRoll = myTurn && state.phase === "ROLL" && !busy;
   // Any human still in the game can pause or resume it.
   const canPause = !!mePlayer && !mePlayer.bankrupt && !mePlayer.bot && state.phase !== "OVER";
-  // Trading: any time while the game runs (not paused), with anyone still in it.
+  // Trading: offers are made on your own turn (others can still answer your offer), with anyone still in it.
   const [tradeOpen, setTradeOpen] = useState(false);
-  const canTrade = canPause && !paused && state.players.some((p) => p.id !== me && !p.bankrupt);
+  const canTrade = canPause && myTurn && state.players.some((p) => p.id !== me && !p.bankrupt);
   const incomingTrades = (state.trades ?? []).filter((t) => t.to === me).length;
 
   // 3D dice cup; falls back to the flat dice if the browser can't do 3D.

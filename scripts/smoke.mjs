@@ -159,7 +159,25 @@ check(steps > 5, "turns play through the API");
 check(Object.keys(game.state.holdings).length > 0 || steps >= 40, "someone bought property");
 
 // ---- trading between the two players (cash only if someone has no cards yet)
+// Offers are made on your own turn: play on until it's A's turn.
+for (let i = 0; i < 12 && game.status === "PLAYING" && game.state.players[game.state.current].id !== A.sub; i++) {
+  const s = game.state;
+  const p = s.players[s.current];
+  const action =
+    s.phase === "ROLL" ? { type: "ROLL" }
+    : s.phase === "BUY" ? { type: "DECLINE" }
+    : s.phase === "DEBT" ? { type: p.cash >= s.debt.amount ? "PAY_DEBT" : "BANKRUPT" }
+    : { type: "END_TURN" };
+  game = await act(users[p.id], action);
+}
 if (game.status === "PLAYING" && !game.state.paused) {
+  rejected = false;
+  try {
+    await act(B, { type: "PROPOSE_TRADE", to: A.sub, give: { squares: [], cash: 10 }, get: { squares: [], cash: 10 } });
+  } catch (e) {
+    rejected = /on your turn/.test(e.message);
+  }
+  check(rejected, "B can't offer a trade on A's turn");
   const owned = (id) =>
     Object.entries(game.state.holdings)
       .filter(([sq, h]) => h.owner === id && !Object.values(game.state.holdings).some((x) => x.level > 0))

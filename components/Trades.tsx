@@ -175,7 +175,10 @@ export function TradeDialog({
             </div>
           )}
           {partner?.bot && (
-            <p className="muted small">Bots answer straight away: they take deals worth at least 10% more to them, and never break up a full district.</p>
+            <p className="muted small">
+              Bots answer straight away. They won&apos;t trade cards while they can still complete a district by buying
+              from the bank; after that they take deals worth at least 10% more to them, and never break up a full district.
+            </p>
           )}
           {!empty && problem && <p className="error small">{problem}</p>}
         </>
@@ -230,7 +233,7 @@ export function TradeOffers({
               ) : (
                 <>
                   You offered <strong>{name(t.to)}</strong> <SideSummary side={t.give} /> for <SideSummary side={t.get} />
-                  <span className="muted small"> · waiting for an answer</span>
+                  <span className="muted small"> · waiting for an answer (open until your turn ends)</span>
                 </>
               )}
               {problem && <div className="error small">Can't go through right now: {problem}</div>}

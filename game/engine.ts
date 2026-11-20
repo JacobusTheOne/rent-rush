@@ -7,6 +7,7 @@ import {
   BOARD_SIZE,
   CELL_INDEX,
   RULES,
+  DISTRICTS,
   STATION_INDEXES,
   baseRent,
   districtSquares,
@@ -321,7 +322,7 @@ export function applyAction(state: GameState, actorId: string, action: Action, c
     skipIdle(s, actor, ctx);
     return s;
   }
-  // Trading: any player, any time (not only on their turn).
+  // Trading: offers are made on your own turn; the other player may answer at any time while it's open.
   if (action.type === "PROPOSE_TRADE") {
     proposeTrade(s, actor, action, ctx);
     return s;
@@ -713,6 +714,13 @@ function skipIdle(s: GameState, actor: PlayerState, ctx: Ctx) {
 }
 
 function advanceTurn(s: GameState, ctx: Ctx) {
+  // Offers are made on your turn and last until it ends.
+  const ending = s.players[s.current];
+  const expired = (s.trades ?? []).filter((t) => t.from === ending.id);
+  if (expired.length) {
+    s.trades = (s.trades ?? []).filter((t) => t.from !== ending.id);
+    log(s, `${ending.name}'s trade offer${expired.length > 1 ? "s" : ""} expired at the end of the turn.`);
+  }
   s.pendingBuy = null;
   s.debt = null;
   s.extraRoll = false;
@@ -815,6 +823,7 @@ function proposeTrade(
   a: Extract<Action, { type: "PROPOSE_TRADE" }>,
   ctx: Ctx,
 ) {
+  if (s.players[s.current].id !== actor.id) throw new RuleError("You can only offer trades on your turn");
   const give = { squares: [...a.give.squares], cash: a.give.cash };
   const get = { squares: [...a.get.squares], cash: a.get.cash };
   const why = tradeProblem(s, actor.id, a.to, give, get);
@@ -896,9 +905,25 @@ function tradeValue(s: GameState, ownerAfter: string, squares: number[]): number
   }, 0);
 }
 
-/** Bots take a trade worth at least 10% more than what they give up, and never break up a full district. */
+/**
+ * Can this player still complete a district by buying from the bank? True if a whole district is
+ * still unowned, or they own part of one and the rest is still unowned.
+ */
+export function canStillBuyASet(s: GameState, playerId: string): boolean {
+  return (Object.keys(DISTRICTS) as (keyof typeof DISTRICTS)[]).some((d) => {
+    const squares = districtSquares(d);
+    return squares.every((i) => !s.holdings[i] || s.holdings[i].owner === playerId) && squares.some((i) => !s.holdings[i]);
+  });
+}
+
+/**
+ * Bots only trade cards once they can no longer complete a district by buying (see canStillBuyASet).
+ * Then they take a trade worth at least 10% more than what they give up, and never break up a full district.
+ */
 export function botAcceptsTrade(s: GameState, t: Trade): boolean {
   if (tradeProblem(s, t.from, t.to, t.give, t.get)) return false;
+  const cards = t.give.squares.length + t.get.squares.length > 0;
+  if (cards && canStillBuyASet(s, t.to)) return false;
   const breaksDistrict = t.get.squares.some((sq) => BOARD[sq].kind === "PROPERTY" && ownsDistrict(s, t.to, sq));
   if (breaksDistrict) return false;
   const bot = s.players.find((p) => p.id === t.to)!;
