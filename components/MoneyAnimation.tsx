@@ -86,13 +86,20 @@ export function useMoneyAnimation(state: GameState, holdBack: boolean): Cash {
   const running = useRef(false);
   const hold = useRef(holdBack);
   hold.current = holdBack;
+  // A state with a new roll or move arrives a moment before the board says it's animating it:
+  // wait for the board to start (and then finish) before paying out.
+  const seen = useRef({ roll: state.rollSeq ?? 0, move: state.moveSeq ?? 0 });
+  const awaitBoard = useRef(false);
+  const fallback = useRef<ReturnType<typeof setTimeout>>(undefined);
+  if (holdBack) awaitBoard.current = false;
+  const held = () => hold.current || awaitBoard.current;
 
   const pump = useRef<() => void>(() => {});
   pump.current = () => {
-    if (running.current || hold.current || queue.current.length === 0) return;
+    if (running.current || held() || queue.current.length === 0) return;
     running.current = true;
     void (async () => {
-      while (queue.current.length > 0 && !hold.current) {
+      while (queue.current.length > 0 && !held()) {
         // Far behind (e.g. the tab was in the background): jump to the latest instead of replaying it all.
         const lagging = queue.current.length > 2;
         const next = lagging ? queue.current.at(-1)! : queue.current[0];
@@ -120,18 +127,31 @@ export function useMoneyAnimation(state: GameState, holdBack: boolean): Cash {
       }
       running.current = false;
       // Something may have arrived while we finished up.
-      if (queue.current.length > 0 && !hold.current) pump.current();
+      if (queue.current.length > 0 && !held()) pump.current();
     })();
   };
 
   // Queue every change in cash.
   useEffect(() => {
+    const moved = (state.rollSeq ?? 0) > seen.current.roll || (state.moveSeq ?? 0) > seen.current.move;
+    seen.current = { roll: state.rollSeq ?? 0, move: state.moveSeq ?? 0 };
     const next = cashOf(state);
     const last = queue.current.at(-1) ?? caughtUp.current;
     if (same(next, last)) return;
     queue.current.push(next);
+    if (moved && !hold.current && !reducedMotion()) {
+      awaitBoard.current = true;
+      // In case the board skips its animation: don't hold the money back for ever.
+      clearTimeout(fallback.current);
+      fallback.current = setTimeout(() => {
+        awaitBoard.current = false;
+        pump.current();
+      }, 1500);
+    }
     pump.current();
   }, [state]);
+
+  useEffect(() => () => clearTimeout(fallback.current), []);
 
   // Dice and pieces done: play the money.
   useEffect(() => {
