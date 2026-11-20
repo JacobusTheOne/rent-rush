@@ -70,8 +70,8 @@ export const BACKGROUND_ART: ArtSpec = {
 export const TOKEN_ART: ArtSpec[] = TOKEN_COLORS.map((color, i) => ({
   kind: "token",
   src: `${ART_BASE}/tokens/token-${i + 1}.jpg`,
-  width: 128,
-  height: 128,
+  width: 256,
+  height: 256,
   label: `Player ${i + 1} token (shown as a circle)`,
   meta: { color, n: i + 1 },
 }));
