@@ -185,8 +185,20 @@ if (game.status === "PLAYING" && !game.state.paused) {
   }
 }
 
+// ---- chat (any time, any player, without changing the game)
+const before = game.state;
+game = await act(A, { type: "CHAT", text: "  hello  <b>table</b> " });
+const said = game.state.chat?.at(-1);
+check(said?.from === A.sub && said.text === "hello <b>table</b>", "A's chat message is stored, trimmed");
+check(game.state.current === before.current && game.state.phase === before.phase, "chat doesn't change the game");
+rejected = false;
+try { await act(B, { type: "CHAT", text: "   " }); } catch (e) { rejected = /Type a message/.test(e.message); }
+check(rejected, "an empty message is rejected");
+
 const left = await gql(A, `mutation M($g: String!) { leaveGame(gameId: $g) { ${FIELDS} } }`, { g: gameId });
 check(left.status === "FINISHED" && left.state.winner === B.sub, "A forfeits, B wins, game FINISHED");
+const gg = await act(B, { type: "CHAT", text: "gg" });
+check(gg.status === "FINISHED" && gg.state.chat.at(-1).text === "gg", "chat still works on a finished table");
 
 await sleep(2000);
 check(gameEvents.filter((e) => !e.wrong).length >= steps, `game subscription got ${gameEvents.length} events`);

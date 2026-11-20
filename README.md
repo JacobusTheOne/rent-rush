@@ -105,6 +105,7 @@ Remove the sandbox backend when you're done: `npm run sandbox:delete`.
 | Taxes go to the bank | Taxes, fines and bail feed a **Jackpot**; land on **Rest Stop** to win it |
 | Unbought property is auctioned | No auctions: declined property stays unowned |
 | Trade during your turn by haggling | **🤝 Trade** any time: offer cards + cash for another player's cards + cash; they accept or decline. Streets in a district with upgrades can't be traded. Bots answer at once (they want 10% more value and never break up a full district) |
+| Table talk | **💬 Chat** with everyone at the table: works while paused, after the game, and for players who are out. Keeps the last 60 messages (200 characters each, at most 5 per 10 seconds) |
 | Mortgages | **Sell back** to the bank for 50% (upgrades too) |
 | Houses and hotels | Up to 3 **upgrade levels** per street (rent ×3 / ×6 / ×10) once you own the district |
 | — | **Home turf**: landing on your own street pays you $20 |

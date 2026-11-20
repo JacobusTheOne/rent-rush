@@ -112,8 +112,18 @@ export const handler = async (event: GameEvent) => {
         return await addBot(me, str(args.gameId, "gameId"));
       case "removeBot":
         return await removeBot(me, str(args.gameId, "gameId"), str(args.botId, "botId"));
-      case "gameAction":
-        return await gameAction(me, str(args.gameId, "gameId"), parseAction(args.action));
+      case "gameAction": {
+        const gameId = str(args.gameId, "gameId");
+        const action = parseAction(args.action);
+        // A chat message can land at the same moment as a move: try again rather than lose it.
+        for (let attempt = 1; ; attempt++) {
+          try {
+            return await gameAction(me, gameId, action);
+          } catch (err) {
+            if (action.type !== "CHAT" || !(err instanceof ConditionalCheckFailedException) || attempt >= 3) throw err;
+          }
+        }
+      }
       default:
         throw new Error(`Unknown field ${fieldName}`);
     }
@@ -235,7 +245,9 @@ async function startGame(me: string, gameId: string) {
 
 async function gameAction(me: string, gameId: string, action: IncomingAction, leaving = false) {
   const game = await load(gameId);
-  if (game.status !== "PLAYING" || !game.state) throw new Error("This game isn't in progress");
+  // Chat also works on a finished table ("good game!"); everything else needs a game in progress.
+  const open = game.status === "PLAYING" || (game.status === "FINISHED" && action.type === "CHAT");
+  if (!open || !game.state) throw new Error("This game isn't in progress");
   if (!game.players.some((p) => p.id === me && !p.bot)) throw new Error("You are not in this game");
   let state: GameState;
   try {
@@ -400,6 +412,12 @@ function parseAction(raw: unknown): IncomingAction {
     const { to, give, get } = value as { to?: unknown; give?: unknown; get?: unknown };
     if (typeof to !== "string" || !to || to.length > 200) throw new Error("Invalid trade partner");
     return { type, to, give: tradeSide(give), get: tradeSide(get) };
+  }
+  if (type === "CHAT") {
+    // The engine cleans and shortens the text; this only bounds what we accept.
+    const { text } = value as { text?: unknown };
+    if (typeof text !== "string" || text.length > 1000) throw new Error("Invalid message");
+    return { type, text };
   }
   if (type === "ACCEPT_TRADE" || type === "DECLINE_TRADE" || type === "CANCEL_TRADE") {
     const { id } = value as { id?: unknown };

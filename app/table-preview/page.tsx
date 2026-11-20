@@ -110,6 +110,22 @@ export default function TablePreview() {
           >
             Big hand
           </button>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() =>
+              setState((s) => {
+                // A message from another player (bots can't chat, so write it straight in).
+                const next = structuredClone(s);
+                const from = next.players[1];
+                next.chatSeq = (next.chatSeq ?? 0) + 1;
+                next.chat = [...(next.chat ?? []), { id: next.chatSeq, from: from.id, name: from.name, text: "Anyone want to trade a station?", at: Date.now() }];
+                return next;
+              })
+            }
+          >
+            Chat in
+          </button>
         </div>
       </header>
       <GameScreen
@@ -119,6 +135,7 @@ export default function TablePreview() {
         busy={false}
         error={error}
         onAction={act}
+        onChat={async (text) => setState((s) => applyAction(s, "p1", { type: "CHAT", text }, { rng: Math.random, now: Date.now() }))}
         onLeave={() => setState(sampleState(count))}
         onExit={() => setState(sampleState(count))}
       />

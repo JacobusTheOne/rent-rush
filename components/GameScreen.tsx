@@ -12,6 +12,7 @@ import { BoardViewport } from "./BoardViewport";
 import { DiceCup, type DiceCupHandle } from "./DiceCup";
 import { MyHand, Nameplate, OpponentSeat, seatOrder } from "./TableSeats";
 import { TradeDialog, TradeOffers } from "./Trades";
+import { Chat } from "./Chat";
 
 interface Props {
   game: Game;
@@ -19,11 +20,13 @@ interface Props {
   busy: boolean;
   error: string | null;
   onAction: (a: Action) => void;
+  /** Sends a chat message; rejects with the reason if it couldn't be sent. */
+  onChat: (text: string) => Promise<void>;
   onLeave: () => void;
   onExit: () => void;
 }
 
-export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLeave, onExit }: Props) {
+export function GameScreen({ game, me, busy: requestBusy, error, onAction, onChat, onLeave, onExit }: Props) {
   const state = game.state!;
   const view = useBoardAnimation(state);
   // Hold the turn buttons until the dice and pieces have finished moving.
@@ -164,6 +167,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onLea
       </div>
 
       <Log state={state} />
+      <Chat state={state} me={me} onSend={onChat} />
       {canTrade && (
         <TradeDialog
           state={state}

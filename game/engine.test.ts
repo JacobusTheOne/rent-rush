@@ -406,3 +406,41 @@ describe("trading", () => {
     expect(s.trades).toHaveLength(0);
   });
 });
+
+describe("chat", () => {
+  const say = (s: GameState, id: string, text: string, now = 1_000) => applyAction(s, id, { type: "CHAT", text }, scripted([], now));
+
+  it("adds a cleaned message without touching the game", () => {
+    const s0 = roll(twoPlayer(), "a", 1, 2);
+    const s = say(s0, "b", "  hi\u0007   there\n ");
+    expect(s.chat).toEqual([{ id: 1, from: "b", name: "Bob", text: "hi there", at: 1_000 }]);
+    // Out of turn is fine, and the game itself is unchanged (moves stay for the animation).
+    expect({ ...s, chat: undefined, chatSeq: undefined }).toEqual({ ...s0, chat: undefined, chatSeq: undefined });
+  });
+
+  it("works while paused, after the game, and for players who are out", () => {
+    let s = act(twoPlayer(), "a", "PAUSE");
+    s = say(s, "b", "brb");
+    s = act(s, "b", "RESUME");
+    s = act(s, "b", "FORFEIT");
+    expect(s.phase).toBe("OVER");
+    s = say(s, "b", "gg");
+    s = say(s, "a", "gg!");
+    expect(s.chat!.map((m) => m.text)).toEqual(["brb", "gg", "gg!"]);
+  });
+
+  it("rejects empty messages, strangers and floods, and keeps only the latest", () => {
+    const s0 = twoPlayer();
+    expect(() => say(s0, "a", "   ")).toThrow(RuleError);
+    expect(() => say(s0, "zed", "hi")).toThrow(RuleError);
+    expect(say(s0, "a", "x".repeat(500)).chat![0].text).toHaveLength(200);
+    let s = s0;
+    for (let i = 0; i < 5; i++) s = say(s, "a", `m${i}`, 1_000 + i);
+    expect(() => say(s, "a", "too fast", 2_000)).toThrow(/Slow down/);
+    s = say(s, "a", "later", 20_000); // the burst window has passed
+    for (let i = 0; i < 70; i++) s = say(s, i % 2 ? "a" : "b", `n${i}`, 100_000 + i * 5_000);
+    expect(s.chat).toHaveLength(60);
+    expect(s.chat!.at(-1)!.text).toBe("n69");
+    expect(s.chatSeq).toBe(76);
+  });
+});

@@ -113,21 +113,25 @@ export function CardFan({ state, owner, items, variant = "hand", className = "",
             <li
               key={item.key}
               className="fan-slot"
-              style={{ "--tilt": `${tilt}deg`, "--drop": `${variant === "column" ? 0 : Math.abs(offset) ** 1.4 * (variant === "row" ? 1.5 : 3)}px`, zIndex: k + 1 } as React.CSSProperties}
+              style={{ "--tilt": `${tilt}deg`, "--drop": `${variant === "column" ? 0 : Math.abs(offset) ** 1.4 * (variant === "row" ? 1.5 : 3)}px`, "--z": k + 1 } as React.CSSProperties}
             >
+              {/* The button is the mouse target and never moves: it stays where the small card is,
+                  so an enlarged card can't cover (and steal the hover from) the cards next to it. */}
               <button
                 type="button"
                 className="fan-card"
                 aria-label={`${label}: open card`}
                 onClick={(e) => show(item, e.currentTarget)}
-              >
+              />
+              {/* What you see: lifts and enlarges on hover, but lets the mouse pass through. */}
+              <span className="fan-visual" aria-hidden>
                 <CardFace item={item} />
                 {item.square !== null && state.holdings[item.square] && (
                   <span className="fan-badge">
                     {level > 0 && <span className="fan-pips">{"▲".repeat(level)}</span>}${rentFor(state, item.square)}
                   </span>
                 )}
-              </button>
+              </span>
             </li>
           );
         })}

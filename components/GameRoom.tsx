@@ -230,6 +230,7 @@ export function GameRoom({ gameId, me, onExit }: Props) {
       busy={busy}
       error={error}
       onAction={(action) => run(() => api.act(game.gameId, action))}
+      onChat={async (text) => accept(await api.act(game.gameId, { type: "CHAT", text }))}
       onLeave={async () => {
         await run(() => api.leaveGame(game.gameId));
         onExit();

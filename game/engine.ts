@@ -81,7 +81,25 @@ export interface GameState {
   /** Open trade offers between players. */
   trades?: Trade[];
   tradeSeq?: number;
+  /** Table talk: the latest messages, oldest first (kept apart from the game log). */
+  chat?: ChatMessage[];
+  chatSeq?: number;
 }
+
+export interface ChatMessage {
+  id: number;
+  from: string;
+  name: string;
+  text: string;
+  at: number;
+}
+
+export const CHAT_MAX_LENGTH = 200;
+/** Messages kept in the game; older ones drop off. */
+export const CHAT_KEEP = 60;
+/** At most this many messages per player in CHAT_WINDOW_MS. */
+export const CHAT_BURST = 5;
+const CHAT_WINDOW_MS = 10_000;
 
 /** One side of a trade: properties (board squares) and cash. */
 export interface TradeSide {
@@ -129,12 +147,13 @@ export type Action =
   | { type: "PROPOSE_TRADE"; to: string; give: TradeSide; get: TradeSide }
   | { type: "ACCEPT_TRADE"; id: number }
   | { type: "DECLINE_TRADE"; id: number }
-  | { type: "CANCEL_TRADE"; id: number };
+  | { type: "CANCEL_TRADE"; id: number }
+  | { type: "CHAT"; text: string };
 
 export const ACTION_TYPES: ReadonlySet<string> = new Set([
   "ROLL", "BUY", "DECLINE", "PAY_BAIL", "USE_CARD", "UPGRADE", "SELL_UPGRADE",
   "SELL_PROPERTY", "PAY_DEBT", "BANKRUPT", "END_TURN", "FORFEIT", "SKIP_IDLE", "PAUSE", "RESUME",
-  "PROPOSE_TRADE", "ACCEPT_TRADE", "DECLINE_TRADE", "CANCEL_TRADE",
+  "PROPOSE_TRADE", "ACCEPT_TRADE", "DECLINE_TRADE", "CANCEL_TRADE", "CHAT",
 ]);
 
 export interface Ctx {
@@ -264,6 +283,9 @@ export function canSellProperty(s: GameState, playerId: string, square: number):
 // ---------------------------------------------------------------- actions
 
 export function applyAction(state: GameState, actorId: string, action: Action, ctx: Ctx): GameState {
+  // Chat works any time: paused, after the game, and for players who are out. It doesn't touch the
+  // game itself (lastMoves stays, so clients don't treat it as a new move).
+  if (action.type === "CHAT") return chat(state, actorId, action.text, ctx);
   const s = structuredClone(state);
   s.lastMoves = [];
   if (s.phase === "OVER") throw new RuleError("The game is over");
@@ -728,6 +750,31 @@ function finish(s: GameState, winnerId: string, message: string) {
   s.pendingBuy = null;
   s.debt = null;
   log(s, message);
+}
+
+// ---------------------------------------------------------------- chat
+
+/** One line of plain text: control characters and runs of spaces collapse, and it's cut to length. */
+export function cleanChatText(raw: string): string {
+  return raw
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, CHAT_MAX_LENGTH);
+}
+
+function chat(state: GameState, actorId: string, raw: string, ctx: Ctx): GameState {
+  const s = structuredClone(state);
+  const actor = s.players.find((p) => p.id === actorId);
+  if (!actor) throw new RuleError("You are not in this game");
+  if (actor.bot) throw new RuleError("Bots don't chat");
+  const text = cleanChatText(raw);
+  if (!text) throw new RuleError("Type a message first");
+  const recent = (s.chat ?? []).filter((m) => m.from === actor.id && ctx.now - m.at < CHAT_WINDOW_MS);
+  if (recent.length >= CHAT_BURST) throw new RuleError("Slow down a little: too many messages at once");
+  s.chatSeq = (s.chatSeq ?? 0) + 1;
+  s.chat = [...(s.chat ?? []), { id: s.chatSeq, from: actor.id, name: actor.name, text, at: ctx.now }].slice(-CHAT_KEEP);
+  return s;
 }
 
 // ---------------------------------------------------------------- trades
