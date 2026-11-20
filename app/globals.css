@@ -3054,3 +3054,34 @@ dialog.trade-dialog::backdrop {
     font-size: 0.65rem;
   }
 }
+
+/* Side seats: the "turn" tag reads left to right on the sideways name tags. */
+.one-screen .seat-left .nameplate .turn-tag,
+.one-screen .seat-right .nameplate .turn-tag {
+  writing-mode: horizontal-tb;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+/* The left name tag is turned upside down to face the board: turn its tag back. */
+.one-screen .seat-left .nameplate .turn-tag {
+  transform: translateX(-50%) rotate(180deg);
+}
+
+/* Side seats use the same small cards as the top and bottom hands. */
+.one-screen .table {
+  --side-card: var(--hand-card);
+}
+
+.one-screen .fan.column {
+  --step: calc(var(--hand-card) * 0.45);
+}
+
+.one-screen .fan.column.side-left .fan-slot:is(:hover, :focus-within) > .fan-visual {
+  transform: translateX(6px) scale(1.8);
+}
+
+.one-screen .fan.column.side-right .fan-slot:is(:hover, :focus-within) > .fan-visual {
+  transform: translateX(-6px) scale(1.8);
+}
