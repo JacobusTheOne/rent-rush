@@ -13,7 +13,7 @@ export interface Game {
   maxPlayers: number;
   maxRounds: number;
   isPrivate: boolean;
-  players: { id: string; name: string; bot?: boolean | null; guest?: boolean | null }[];
+  players: { id: string; name: string; bot?: boolean | null; guest?: boolean | null; icon?: number | null }[];
   version: number;
   updatedAt: string;
   state: GameState | null;
@@ -71,6 +71,7 @@ export const api = {
   startGame: (gameId: string) => one(client.mutations.startGame({ gameId }, mode)),
   addBot: (gameId: string) => one(client.mutations.addBot({ gameId }, mode)),
   removeBot: (gameId: string, botId: string) => one(client.mutations.removeBot({ gameId, botId }, mode)),
+  chooseIcon: (gameId: string, icon: number) => one(client.mutations.chooseIcon({ gameId, icon }, mode)),
   /** Ask the server to make the current bot's next move. */
   botStep: (gameId: string) =>
     one(client.mutations.gameAction({ gameId, action: JSON.stringify({ type: "BOT_STEP" }) }, mode)),

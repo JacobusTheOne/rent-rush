@@ -10,6 +10,7 @@ import {
   DISTRICTS,
   STATION_INDEXES,
   baseRent,
+  freeIcon,
   districtSquares,
   isOwnable,
   upgradeCost,
@@ -23,7 +24,10 @@ export type Phase = "ROLL" | "BUY" | "DEBT" | "END" | "OVER";
 export interface PlayerState {
   id: string;
   name: string;
+  /** Seat colour (TOKEN_COLORS index). */
   token: number;
+  /** Chosen animal (TOKEN_ICONS index); older games don't have one and use `token`. */
+  icon?: number;
   cash: number;
   position: number;
   inCell: boolean;
@@ -171,10 +175,17 @@ const MAX_LOG = 40;
 // ---------------------------------------------------------------- setup
 
 export function newGame(
-  players: { id: string; name: string; bot?: boolean | null; guest?: boolean | null }[],
+  players: { id: string; name: string; bot?: boolean | null; guest?: boolean | null; icon?: number | null }[],
   maxRounds: number,
   ctx: Ctx,
 ): GameState {
+  // Everyone keeps the icon they chose; anyone without one gets a free one.
+  const icons: number[] = [];
+  for (const p of players) {
+    const chosen = p.icon ?? null;
+    icons.push(chosen !== null && !icons.includes(chosen) ? chosen : freeIcon([...icons, ...players.map((x) => x.icon)]));
+  }
+  const iconOf = new Map(players.map((p, k) => [p.id, icons[k]]));
   // Random turn order.
   const order = [...players];
   for (let i = order.length - 1; i > 0; i--) {
@@ -186,6 +197,7 @@ export function newGame(
       id: p.id,
       name: p.name,
       token: i,
+      icon: iconOf.get(p.id),
       cash: RULES.startingCash,
       position: 0,
       inCell: false,

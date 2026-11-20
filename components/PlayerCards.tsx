@@ -65,7 +65,7 @@ export function PlayerCards({ state, me, busy, myTurn, onAction }: Props) {
             className={`card-tab ${p.id === viewing ? "selected" : ""}`}
             onClick={() => setViewing(p.id)}
           >
-            <Token index={p.token} art={art} />
+            <Token index={p.token} icon={p.icon} art={art} />
             {p.id === me ? "You" : p.name}
             <span className="count">{ownedBy(state, p.id).length + p.freeCards}</span>
           </button>

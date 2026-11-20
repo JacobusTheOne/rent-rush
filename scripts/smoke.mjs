@@ -18,7 +18,7 @@ const endpoint = outputs.data.url;
 const host = new URL(endpoint).host;
 
 // isPrivate must be selected: the lobby feed only delivers events whose payload says isPrivate: false.
-const FIELDS = "gameId name status hostId isPrivate maxPlayers maxRounds players { id name } version updatedAt state";
+const FIELDS = "gameId name status hostId isPrivate maxPlayers maxRounds players { id name icon } version updatedAt state";
 
 async function tokenFor(email) {
   await signOut().catch(() => {});
@@ -122,8 +122,22 @@ try {
 }
 check(rejected, "non-host can't start");
 
+// ---- tokens: everyone gets a free animal; pick another; a taken one is refused
+check(new Set(joined.players.map((p) => p.icon)).size === 2, `both players got their own token (${joined.players.map((p) => p.icon)})`);
+const chooseIcon = (user, icon) =>
+  gql(user, `mutation M($g: String!, $i: Int!) { chooseIcon(gameId: $g, icon: $i) { ${FIELDS} } }`, { g: gameId, i: icon });
+let picked = await chooseIcon(B, 6);
+check(picked.players.find((p) => p.id === B.sub).icon === 6, "B chose the giraffe");
+rejected = false;
+try { await chooseIcon(A, 6); } catch (e) { rejected = /already has the Giraffe/.test(e.message); }
+check(rejected, "A can't take B's giraffe");
+
 let game = await gql(A, `mutation M($g: String!) { startGame(gameId: $g) { ${FIELDS} } }`, { g: gameId });
 check(game.status === "PLAYING" && game.state.phase === "ROLL", "host started the game");
+check(game.state.players.find((p) => p.id === B.sub).icon === 6, "B plays as the giraffe");
+rejected = false;
+try { await chooseIcon(B, 7); } catch (e) { rejected = /before the game starts/.test(e.message); }
+check(rejected, "no changing tokens once the game has started");
 
 const users = { [A.sub]: A, [B.sub]: B };
 const act = (user, action) =>
@@ -225,7 +239,7 @@ check(lobbyEvents.some((e) => e.gameId === gameId && e.status === "WAITING"), `l
 
 // ---- bots
 console.log("Bots");
-const FIELDS_B = FIELDS.replace("players { id name }", "players { id name bot }");
+const FIELDS_B = FIELDS.replace("players { id name icon }", "players { id name icon bot }");
 const botGame = await gql(
   A,
   `mutation M($n: String!, $p: Int!, $r: Int!) { createGame(name: $n, maxPlayers: $p, maxRounds: $r) { ${FIELDS_B} } }`,

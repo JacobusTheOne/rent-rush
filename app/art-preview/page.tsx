@@ -24,7 +24,10 @@ function sampleState(): GameState {
     20,
     { rng: (max) => max - 1, now: 0 },
   );
-  s.players.forEach((p, i) => (p.token = i));
+  s.players.forEach((p, i) => {
+    p.token = i;
+    p.icon = [4, 0, 5, 2][i];
+  });
   s.players[0].position = 0;
   s.players[1].position = 7;
   s.players[2].position = 7;

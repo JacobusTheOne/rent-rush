@@ -3202,3 +3202,104 @@ dialog.trade-dialog::backdrop {
     animation: none;
   }
 }
+
+/* ---------- waiting room: choose your token ---------- */
+
+.seat.taken {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.seat.taken > .token {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+}
+
+.icon-picker h3 {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.icon-choice {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.3rem 0.45rem;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.icon-choice:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+
+.icon-choice.chosen {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 14px rgba(242, 201, 76, 0.35);
+}
+
+.icon-choice.taken {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.icon-art {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.icon-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.icon-fallback {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1e2a30;
+}
+
+.icon-name {
+  font-size: 0.85rem;
+}
+
+.icon-owner {
+  font-size: 0.7rem;
+  color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-owner.you {
+  color: var(--gold);
+  font-weight: 800;
+}
+
+@media (max-width: 420px) {
+  .icon-art {
+    width: 52px;
+    height: 52px;
+  }
+}

@@ -14,6 +14,8 @@ const schema = a.schema({
     bot: a.boolean(),
     /** Playing without an account. */
     guest: a.boolean(),
+    /** Chosen animal (index into TOKEN_ICONS in game/board.ts). */
+    icon: a.integer(),
   }),
 
   GameView: a.customType({
@@ -97,6 +99,14 @@ const schema = a.schema({
     .handler(a.handler.function(game))
     .authorization((allow) => [allow.authenticated(), allow.guest()]),
 
+  /** While the table is waiting: pick your animal (each can only be taken once). */
+  chooseIcon: a
+    .mutation()
+    .arguments({ gameId: a.string().required(), icon: a.integer().required() })
+    .returns(a.ref("GameView"))
+    .handler(a.handler.function(game))
+    .authorization((allow) => [allow.authenticated(), allow.guest()]),
+
   /**
    * A move in the game. action is JSON, e.g. {"type":"ROLL"}. {"type":"BOT_STEP"}
    * asks the server to make the current bot's next move (any human player may trigger it).
@@ -121,6 +131,7 @@ const schema = a.schema({
       a.ref("startGame"),
       a.ref("addBot"),
       a.ref("removeBot"),
+      a.ref("chooseIcon"),
       a.ref("gameAction"),
     ])
     .arguments({ gameId: a.string() })

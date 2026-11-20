@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOARD, RULES, districtSquares, isOwnable } from "./board";
+import { BOARD, RULES, districtSquares, freeIcon, isOwnable } from "./board";
 
 /** Gives every unowned street and station to `owner`, so nothing is left to buy. */
 function fillBoard(s: GameState, owner: string) {
@@ -453,6 +453,18 @@ describe("trading", () => {
     let s = offer(bobs(), "b", "a", [7], 0, [2], 0);
     s = act(s, "b", "FORFEIT");
     expect(s.trades).toHaveLength(0);
+  });
+});
+
+describe("tokens", () => {
+  it("keeps chosen icons and gives everyone else a free one", () => {
+    expect(freeIcon([0, 1, 3])).toBe(2);
+    expect(freeIcon([])).toBe(0);
+    const s = newGame([{ ...A, icon: 6 }, { ...B, icon: null }, { id: "c", name: "Cat", icon: 0 }], 20, scripted([1, 0]));
+    const icon = (id: string) => s.players.find((p) => p.id === id)!.icon;
+    expect([icon("a"), icon("c")]).toEqual([6, 0]);
+    expect(icon("b")).toBe(1); // first animal nobody chose
+    expect(new Set(s.players.map((p) => p.icon)).size).toBe(3);
   });
 });
 

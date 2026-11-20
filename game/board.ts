@@ -92,6 +92,16 @@ export function roundProgress(round: number, maxRounds: number): string {
 
 export const TOKEN_COLORS = ["#f2c94c", "#eb5757", "#56ccf2", "#6fcf97"];
 
+/** The animals players choose from before a game starts (artwork: public/board/tokens/icon-N-*.jpg). */
+export const TOKEN_ICONS = ["Shark", "Dolphin", "Turtle", "Bunny", "Lion", "Elephant", "Giraffe", "Meerkat"] as const;
+
+/** The first icon nobody at the table has yet. */
+export function freeIcon(taken: (number | null | undefined)[]): number {
+  const used = new Set(taken);
+  const free = TOKEN_ICONS.findIndex((_, i) => !used.has(i));
+  return free === -1 ? 0 : free;
+}
+
 export function isOwnable(sq: Square): sq is OwnableSquare {
   return sq.kind === "PROPERTY" || sq.kind === "STATION";
 }

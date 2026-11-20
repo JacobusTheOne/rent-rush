@@ -6,12 +6,16 @@ import { TOKEN_ART } from "@/game/art";
 /** A player's token: their token image if present (cropped to a circle), else a coloured dot. */
 export function Token({
   index,
+  icon,
   name,
   art,
   active = false,
   hopping = false,
 }: {
+  /** Seat colour (TOKEN_COLORS index). */
   index: number;
+  /** Chosen animal (TOKEN_ICONS index); falls back to the seat number for older games. */
+  icon?: number | null;
   name?: string;
   art: Set<string>;
   /** Highlight as the player whose turn it is. */
@@ -19,7 +23,7 @@ export function Token({
   /** Currently walking: plays a hop each time it lands on a new square. */
   hopping?: boolean;
 }) {
-  const src = TOKEN_ART[index]?.src;
+  const src = TOKEN_ART[icon ?? index]?.src;
   const hasArt = !!src && art.has(src);
   return (
     <span

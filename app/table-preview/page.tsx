@@ -14,7 +14,10 @@ const NAMES = ["You", "Bot Penny", "Rex", "Ivy"];
 function sampleState(count: number): GameState {
   const players = NAMES.slice(0, count).map((name, i) => ({ id: `p${i + 1}`, name, bot: i === 1 }));
   const s = newGame(players, 20, { rng: (max) => max - 1, now: Date.now() });
-  s.players.forEach((p, i) => (p.token = i));
+  s.players.forEach((p, i) => {
+    p.token = i;
+    p.icon = [4, 0, 5, 2][i];
+  });
   const holdings: GameState["holdings"] = {
     "1": { owner: "p1", level: 0 },
     "2": { owner: "p1", level: 2 },

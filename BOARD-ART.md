@@ -30,16 +30,11 @@ sharper squares (each square should ideally be at least 300 px in the source).
 
 ### Player tokens from a 2×2 character sheet
 
-```bash
-npm run art:tokens -- art/source/tokens.png
-npm run art:tokens -- "sheet.png" --order 4,1,2,3
-```
-
-Crops each figure to head and shoulders (tokens are small circles) and writes
-`tokens/token-1..4.jpg`. `--order` says which sheet position (1 top-left, 2 top-right, 3
-bottom-left, 4 bottom-right) becomes player 1..4; match the player colours (1 yellow, 2 red,
-3 blue, 4 green). With token art present, tokens are drawn larger so the characters are
-recognisable.
+Players choose their token (an animal) before the game starts. The eight icons are
+`tokens/icon-1-shark.jpg` … `icon-8-meerkat.jpg` (names and order in `TOKEN_ICONS`,
+game/board.ts), each a 256×256 square on white, shown cropped to a circle with the player's
+colour ring. To replace them, cut a new sheet into the same eight files (square, the figure
+centred with a little margin). (`npm run art:tokens` is the older 4-token slicer.)
 
 ### Templates
 
@@ -54,7 +49,7 @@ of them (this deletes your art).
 | `background.jpg` | 2100×2100 | Behind the whole board; only the thin gaps and edge show. |
 | `center.jpg` | 1500×1500 | Inside the ring of squares. With this file present, the game shows round, dice, Jackpot and the Fortune card on a dark panel over the **bottom third** (about the middle 64% of the width), and hides the built-in "RENT RUSH" title: put your title in the upper part. Don't paint dice or a Jackpot amount; the game shows the real ones. |
 | `squares/00-start.jpg` … `squares/23-golden-mile.jpg` | 300×300 each | One per square, numbered clockwise from Start. Your art carries the name and price (the built-in text is hidden when the image exists). |
-| `tokens/token-1.jpg` … `token-4.jpg` | 128×128 | Player pieces, shown cropped to a circle with a player-colour ring. |
+| `tokens/icon-1-shark.jpg` … `icon-8-meerkat.jpg` | 256×256 | The eight choosable player tokens, shown cropped to a circle with a player-colour ring. |
 | `dice/die-1.jpg` … `die-6.jpg` | 160×160 | Die faces, shown with rounded corners. |
 | `cards/fortune.jpg` | 600×340 | Background of the Fortune card; the card text is drawn on top. |
 

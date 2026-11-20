@@ -98,7 +98,7 @@ export function Board({
                 {here.map((p) => (
                   <Token
                     key={p.id}
-                    index={p.token}
+                    index={p.token} icon={p.icon}
                     name={p.name}
                     art={art}
                     active={p.id === current?.id && state.phase !== "OVER"}

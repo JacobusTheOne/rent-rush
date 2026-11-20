@@ -6,7 +6,7 @@
  * Files live in public/board/ and are served from /board/. A missing file
  * falls back to the built-in CSS look, so art can be added one piece at a time.
  */
-import { BOARD, DISTRICTS, TOKEN_COLORS, type Square } from "./board";
+import { BOARD, DISTRICTS, TOKEN_COLORS, TOKEN_ICONS, type Square } from "./board";
 
 export const ART_BASE = "/board";
 
@@ -67,13 +67,14 @@ export const BACKGROUND_ART: ArtSpec = {
   label: "Whole-board background (shows in the gaps and border)",
 };
 
-export const TOKEN_ART: ArtSpec[] = TOKEN_COLORS.map((color, i) => ({
+/** One image per choosable icon (TOKEN_ICONS), shown as a circle in the player's colour ring. */
+export const TOKEN_ART: ArtSpec[] = TOKEN_ICONS.map((name, i) => ({
   kind: "token",
-  src: `${ART_BASE}/tokens/token-${i + 1}.jpg`,
+  src: `${ART_BASE}/tokens/icon-${i + 1}-${slug(name)}.jpg`,
   width: 256,
   height: 256,
-  label: `Player ${i + 1} token (shown as a circle)`,
-  meta: { color, n: i + 1 },
+  label: `Token: ${name} (shown as a circle)`,
+  meta: { color: TOKEN_COLORS[i % TOKEN_COLORS.length], n: i + 1, name },
 }));
 
 export const DIE_ART: ArtSpec[] = [1, 2, 3, 4, 5, 6].map((n) => ({

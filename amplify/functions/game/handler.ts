@@ -12,7 +12,7 @@ import {
   AdminGetUserCommand,
   CognitoIdentityProviderClient,
 } from "@aws-sdk/client-cognito-identity-provider";
-import { RULES } from "../../../game/board";
+import { RULES, TOKEN_ICONS, freeIcon } from "../../../game/board";
 import {
   ACTION_TYPES,
   type Action,
@@ -44,6 +44,8 @@ interface LobbyPlayer {
   name: string;
   bot?: boolean;
   guest?: boolean;
+  /** Chosen animal (TOKEN_ICONS index), picked while the table is waiting. */
+  icon?: number;
 }
 
 /** Who is calling: a signed-in player (user pool) or a guest (anonymous identity-pool identity). */
@@ -112,6 +114,8 @@ export const handler = async (event: GameEvent) => {
         return await addBot(me, str(args.gameId, "gameId"));
       case "removeBot":
         return await removeBot(me, str(args.gameId, "gameId"), str(args.botId, "botId"));
+      case "chooseIcon":
+        return await chooseIcon(me, str(args.gameId, "gameId"), args.icon);
       case "gameAction": {
         const gameId = str(args.gameId, "gameId");
         const action = parseAction(args.action);
@@ -222,7 +226,7 @@ async function addBot(me: string, gameId: string) {
   if (game.players.length >= game.maxPlayers) throw new Error("The table is full");
   const taken = new Set(game.players.map((p) => p.name));
   const name = BOT_NAMES.find((n) => !taken.has(n)) ?? `Bot ${game.players.length + 1}`;
-  const bot: LobbyPlayer = { id: `bot-${randomUUID()}`, name, bot: true };
+  const bot: LobbyPlayer = { id: `bot-${randomUUID()}`, name, bot: true, icon: freeIcon(game.players.map((p) => p.icon)) };
   return view(await save(game, { ...game, players: [...game.players, bot] }));
 }
 
@@ -232,6 +236,19 @@ async function removeBot(me: string, gameId: string, botId: string) {
   if (game.status !== "WAITING") throw new Error("The game has already started");
   if (!game.players.some((p) => p.id === botId && p.bot)) throw new Error("No such bot");
   return view(await save(game, { ...game, players: game.players.filter((p) => p.id !== botId) }));
+}
+
+/** Pick your animal while the table is waiting; each one can only be taken once. */
+async function chooseIcon(me: string, gameId: string, raw: unknown) {
+  const icon = Number(raw);
+  if (!Number.isInteger(icon) || icon < 0 || icon >= TOKEN_ICONS.length) throw new Error("Pick one of the icons");
+  const game = await load(gameId);
+  if (game.status !== "WAITING") throw new Error("Icons are picked before the game starts");
+  if (!game.players.some((p) => p.id === me)) throw new Error("You are not at this table");
+  const owner = game.players.find((p) => p.id !== me && p.icon === icon);
+  if (owner) throw new Error(`${owner.name} already has the ${TOKEN_ICONS[icon]}`);
+  const players = game.players.map((p) => (p.id === me ? { ...p, icon } : p));
+  return view(await save(game, { ...game, players }));
 }
 
 async function startGame(me: string, gameId: string) {
@@ -363,8 +380,9 @@ const nameCache = new Map<string, string>();
 /** Public name from Cognito (never the email address). */
 /** The lobby entry for the caller: account name for signed-in players, a cleaned-up chosen name for guests. */
 async function seat(caller: Caller, guestName: unknown, others: LobbyPlayer[]): Promise<LobbyPlayer> {
-  if (!caller.guest) return { id: caller.id, name: await playerName(caller.user) };
-  return { id: caller.id, name: uniqueName(cleanGuestName(guestName), others), guest: true };
+  const icon = freeIcon(others.map((p) => p.icon));
+  if (!caller.guest) return { id: caller.id, name: await playerName(caller.user), icon };
+  return { id: caller.id, name: uniqueName(cleanGuestName(guestName), others), guest: true, icon };
 }
 
 /** Guests pick any name: keep it short and printable, and don't let it pose as a bot. */

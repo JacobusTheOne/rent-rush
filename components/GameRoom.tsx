@@ -5,6 +5,7 @@ import { RULES, roundsLabel } from "@/game/board";
 import { api, errorMessage, type Game } from "@/lib/api";
 import { animationMs } from "@/lib/useBoardAnimation";
 import { GameScreen } from "./GameScreen";
+import { IconPicker, SeatIcon } from "./IconPicker";
 
 /** Pause between bot moves so humans can follow along. */
 const BOT_STEP_MS = 900;
@@ -146,6 +147,7 @@ export function GameRoom({ gameId, me, onExit }: Props) {
             <li key={p?.id ?? `empty-${i}`} className={p ? "seat taken" : "seat"}>
               {p ? (
                 <>
+                  <SeatIcon seat={i} icon={p.icon} />
                   {p.bot && <span aria-hidden>🤖 </span>}
                   {p.name}
                   {p.bot && <span className="badge">bot</span>}
@@ -181,6 +183,9 @@ export function GameRoom({ gameId, me, onExit }: Props) {
             </li>
           ))}
         </ul>
+        {isPlayer && (
+          <IconPicker game={game} me={me} busy={busy} onPick={(icon) => run(() => api.chooseIcon(game.gameId, icon))} />
+        )}
         {error && <p className="error">{error}</p>}
         <div className="row">
           {!isPlayer && game.players.length < game.maxPlayers && (

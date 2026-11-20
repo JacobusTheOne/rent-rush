@@ -30,7 +30,7 @@ export function Nameplate({ state, player, me }: { state: GameState; player: Pla
   const isTurn = state.players[state.current].id === player.id && state.phase !== "OVER";
   return (
     <div className={`nameplate ${isTurn ? "turn" : ""} ${player.bankrupt ? "out" : ""}`}>
-      <Token index={player.token} art={art} />
+      <Token index={player.token} icon={player.icon} art={art} />
       <div className="nameplate-text">
         <span className="pname">
           {player.name}
