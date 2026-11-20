@@ -204,6 +204,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
           me={me}
           open={tradeOpen}
           busy={requestBusy}
+          error={error}
           onClose={() => setTradeOpen(false)}
           onSend={onAction}
         />

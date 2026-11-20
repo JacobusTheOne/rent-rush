@@ -3094,3 +3094,23 @@ dialog.trade-dialog::backdrop {
     overflow: visible;
   }
 }
+
+/* The answer to the offer just sent, inside the trade window. */
+.trade-result {
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  line-height: 1.45;
+}
+
+.trade-result.ok {
+  border-color: var(--accent);
+  background: rgba(55, 200, 138, 0.12);
+}
+
+.trade-result.no {
+  border-color: #eb5757;
+  background: rgba(235, 87, 87, 0.12);
+}

@@ -45,6 +45,7 @@ export function TradeDialog({
   me,
   open,
   busy,
+  error,
   onClose,
   onSend,
 }: {
@@ -52,6 +53,8 @@ export function TradeDialog({
   me: string;
   open: boolean;
   busy: boolean;
+  /** The last server error (e.g. a refused offer), shown once an offer has been sent. */
+  error: string | null;
   onClose: () => void;
   onSend: (a: Action) => void;
 }) {
@@ -62,6 +65,8 @@ export function TradeDialog({
   const [get, setGet] = useState<number[]>([]);
   const [giveCash, setGiveCash] = useState(0);
   const [getCash, setGetCash] = useState(0);
+  // The last offer sent from this window: its result shows here until the player closes the window.
+  const [sent, setSent] = useState<{ afterLog: number; to: string; bot: boolean } | null>(null);
 
   useEffect(() => {
     const d = dialog.current;
@@ -77,6 +82,7 @@ export function TradeDialog({
     setGet([]);
     setGiveCash(0);
     setGetCash(0);
+    setSent(null);
     if (!partners.some((p) => p.id === partnerId)) setPartnerId(partners[0]?.id ?? "");
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -158,6 +164,7 @@ export function TradeDialog({
                   setPartnerId(p.id);
                   setGet([]);
                   setGetCash(0);
+                  setSent(null);
                 }}
               >
                 {p.bot ? "🤖 " : ""}
@@ -181,6 +188,7 @@ export function TradeDialog({
             </p>
           )}
           {!empty && problem && <p className="error small">{problem}</p>}
+          {sent && <TradeResult state={state} sent={sent} busy={busy} error={error} />}
         </>
       )}
       <div className="row">
@@ -189,17 +197,69 @@ export function TradeDialog({
           disabled={busy || !!problem || !partner}
           onClick={() => {
             if (!partner) return;
+            setSent({ afterLog: state.log.at(-1)?.n ?? 0, to: partner.id, bot: !!partner.bot });
             onSend({ type: "PROPOSE_TRADE", to: partner.id, give: giveSide, get: getSide });
-            onClose();
+            // Fresh picks for the next offer; the window stays open to show the answer.
+            setGive([]);
+            setGet([]);
+            setGiveCash(0);
+            setGetCash(0);
           }}
         >
           Send offer
         </button>
         <button type="button" className="secondary" onClick={onClose}>
-          Cancel
+          Close
         </button>
       </div>
     </dialog>
+  );
+}
+
+/** What happened to the offer just sent: a bot's answer (with its reason), or "waiting" for a person. */
+function TradeResult({
+  state,
+  sent,
+  busy,
+  error,
+}: {
+  state: GameState;
+  sent: { afterLog: number; to: string; bot: boolean };
+  busy: boolean;
+  error: string | null;
+}) {
+  const name = state.players.find((p) => p.id === sent.to)?.name ?? "They";
+  const news = state.log.filter((e) => e.n > sent.afterLog).map((e) => e.text);
+  const done = news.find((t) => t.startsWith("Trade done"));
+  const refused = news.find((t) => t.includes("turned the trade down"));
+  const offered = news.some((t) => t.includes("offered") && t.includes("a trade"));
+  let body: React.ReactNode;
+  let tone = "";
+  if (done) {
+    body = <>✅ {name} accepted. {done}</>;
+    tone = "ok";
+  } else if (refused) {
+    const why = refused.split("turned the trade down:")[1]?.trim().replace(/\.$/, "");
+    body = (
+      <>
+        ❌ <strong>{name}</strong> turned it down{why ? <>: {why}.</> : "."}
+      </>
+    );
+    tone = "no";
+  } else if (offered && !sent.bot) {
+    body = <>📨 Offer sent. {name} can accept or decline it until your turn ends.</>;
+  } else if (error) {
+    body = <>⚠️ {error}</>;
+    tone = "no";
+  } else if (busy) {
+    body = <span className="muted">Sending…</span>;
+  } else {
+    return null;
+  }
+  return (
+    <p className={`trade-result ${tone}`} role="status" aria-live="polite">
+      {body}
+    </p>
   );
 }
 

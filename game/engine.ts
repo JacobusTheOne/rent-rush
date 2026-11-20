@@ -13,6 +13,7 @@ import {
   districtSquares,
   isOwnable,
   upgradeCost,
+  type DistrictId,
   type OwnableSquare,
   type Square,
 } from "./board";
@@ -839,8 +840,9 @@ function proposeTrade(
   log(s, `${actor.name} offered ${to.name} a trade: ${describeSide(give)} for ${describeSide(get)}.`);
   if (to.bot) {
     // Bots answer straight away.
-    if (botAcceptsTrade(s, trade)) completeTrade(s, trade);
-    else log(s, `${to.name} turned the trade down.`);
+    const refusal = botTradeRefusal(s, trade);
+    if (refusal) log(s, `${to.name} turned the trade down: ${refusal}.`);
+    else completeTrade(s, trade);
     return;
   }
   s.trades.push(trade);
@@ -906,31 +908,57 @@ function tradeValue(s: GameState, ownerAfter: string, squares: number[]): number
 }
 
 /**
- * Can this player still complete a district by buying from the bank? True if a whole district is
- * still unowned, or they own part of one and the rest is still unowned.
+ * A district this player could still complete by buying from the bank: the rest of one they've
+ * started is still unowned (checked first), or a whole district is still unowned. Null if none.
  */
-export function canStillBuyASet(s: GameState, playerId: string): boolean {
-  return (Object.keys(DISTRICTS) as (keyof typeof DISTRICTS)[]).some((d) => {
+export function buyableSet(s: GameState, playerId: string): DistrictId | null {
+  const open = (Object.keys(DISTRICTS) as DistrictId[]).filter((d) => {
     const squares = districtSquares(d);
     return squares.every((i) => !s.holdings[i] || s.holdings[i].owner === playerId) && squares.some((i) => !s.holdings[i]);
   });
+  const started = open.find((d) => districtSquares(d).some((i) => s.holdings[i]?.owner === playerId));
+  return started ?? open[0] ?? null;
+}
+
+export function canStillBuyASet(s: GameState, playerId: string): boolean {
+  return buyableSet(s, playerId) !== null;
 }
 
 /**
- * Bots only trade cards once they can no longer complete a district by buying (see canStillBuyASet).
- * Then they take a trade worth at least 10% more than what they give up, and never break up a full district.
+ * Why a bot turns this trade down, or null if it accepts. Bots only trade cards once they can no
+ * longer complete a district by buying (see buyableSet). Then they take a trade worth at least 10%
+ * more than what they give up, keep a cash cushion, and never break up a full district.
  */
-export function botAcceptsTrade(s: GameState, t: Trade): boolean {
-  if (tradeProblem(s, t.from, t.to, t.give, t.get)) return false;
+export function botTradeRefusal(s: GameState, t: Trade): string | null {
+  const problem = tradeProblem(s, t.from, t.to, t.give, t.get);
+  if (problem) return problem.charAt(0).toLowerCase() + problem.slice(1);
   const cards = t.give.squares.length + t.get.squares.length > 0;
-  if (cards && canStillBuyASet(s, t.to)) return false;
-  const breaksDistrict = t.get.squares.some((sq) => BOARD[sq].kind === "PROPERTY" && ownsDistrict(s, t.to, sq));
-  if (breaksDistrict) return false;
+  const set = cards ? buyableSet(s, t.to) : null;
+  if (set) {
+    const started = districtSquares(set).some((i) => s.holdings[i]?.owner === t.to);
+    return started
+      ? `it can still complete ${DISTRICTS[set].name} by buying the rest from the bank, so it isn't trading cards yet`
+      : `${DISTRICTS[set].name} is still all for sale, so it isn't trading cards yet`;
+  }
+  const broken = t.get.squares.find((sq) => BOARD[sq].kind === "PROPERTY" && ownsDistrict(s, t.to, sq));
+  if (broken !== undefined) {
+    const sq = BOARD[broken] as Extract<Square, { kind: "PROPERTY" }>;
+    return `it won't break up its full ${DISTRICTS[sq.district].name} district`;
+  }
   const bot = s.players.find((p) => p.id === t.to)!;
-  if (t.get.cash > 0 && bot.cash - t.get.cash < BOT_RESERVE.buy) return false; // keep a cash cushion
-  const receives = tradeValue(s, t.to, t.give.squares) + t.give.cash;
+  if (t.get.cash > 0 && bot.cash - t.get.cash < BOT_RESERVE.buy) {
+    return `it wants to keep at least $${BOT_RESERVE.buy} in cash`;
+  }
+  const receives = Math.round(tradeValue(s, t.to, t.give.squares) + t.give.cash);
   const givesUp = t.get.squares.reduce((sum, sq) => sum + (BOARD[sq] as OwnableSquare).price, 0) + t.get.cash;
-  return receives >= givesUp * 1.1;
+  if (receives < givesUp * 1.1) {
+    return `not a good enough deal for it: it values your side at $${receives} and its side at $${givesUp}, and wants at least $${Math.ceil(givesUp * 1.1)}`;
+  }
+  return null;
+}
+
+export function botAcceptsTrade(s: GameState, t: Trade): boolean {
+  return botTradeRefusal(s, t) === null;
 }
 
 // ---------------------------------------------------------------- bots

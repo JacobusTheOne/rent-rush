@@ -422,10 +422,11 @@ describe("trading", () => {
     // $50 for Pine Court: bad deal.
     s = offer(base, "a", "bot", [], 50, [7], 0);
     expect(s.holdings["7"].owner).toBe("bot");
-    expect(s.log.at(-1)!.text).toMatch(/turned the trade down/);
+    expect(s.log.at(-1)!.text).toMatch(/turned the trade down: not a good enough deal for it: it values your side at \$50 and its side at \$100/);
     // $500 for Mill Street would break up its full Old Town district.
     s = offer(base, "a", "bot", [], 500, [1], 0);
     expect(s.holdings["1"].owner).toBe("bot");
+    expect(s.log.at(-1)!.text).toMatch(/won't break up its full Old Town district/);
     expect(s.trades ?? []).toHaveLength(0);
   });
 
@@ -436,10 +437,12 @@ describe("trading", () => {
     base.holdings = { "7": { owner: "bot", level: 0 }, "10": { owner: "a", level: 0 } };
     const generous = (s: GameState) => offer(s, "a", "bot", [10], 400, [7], 0);
     expect(generous(base).holdings["7"].owner).toBe("bot"); // refused
+    expect(generous(base).log.at(-1)!.text).toMatch(/can still complete Harborside by buying the rest from the bank/);
     // The rest of Harborside is now owned by Ann, but another district is still wholly for sale.
     const partly = structuredClone(base);
     for (const sq of districtSquares("teal")) if (sq !== 7) partly.holdings[sq] = { owner: "a", level: 0 };
     expect(generous(partly).holdings["7"].owner).toBe("bot"); // still refused
+    expect(generous(partly).log.at(-1)!.text).toMatch(/is still all for sale/);
     // Nothing left that the bot could complete by buying: now it takes the good deal.
     const full = structuredClone(partly);
     fillBoard(full, "a");
