@@ -13,6 +13,7 @@ import { DiceCup, type DiceCupHandle } from "./DiceCup";
 import { MyHand, Nameplate, OpponentSeat, seatOrder } from "./TableSeats";
 import { TradeDialog, TradeOffers } from "./Trades";
 import { Chat } from "./Chat";
+import { RulesDialog } from "./RulesDialog";
 import { CashContext, useMoneyAnimation } from "./MoneyAnimation";
 
 interface Props {
@@ -43,6 +44,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
   const canPause = !!mePlayer && !mePlayer.bankrupt && !mePlayer.bot && state.phase !== "OVER";
   // Trading: offers are made on your own turn (others can still answer your offer), with anyone still in it.
   const [tradeOpen, setTradeOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const canTrade = canPause && myTurn && state.players.some((p) => p.id !== me && !p.bankrupt);
   const incomingTrades = (state.trades ?? []).filter((t) => t.to === me).length;
 
@@ -77,6 +79,11 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
   const lobbyButton = (
     <button type="button" className="secondary" onClick={onExit}>
       Lobby
+    </button>
+  );
+  const rulesButton = (
+    <button type="button" className="secondary" title="How to play Rent Rush" onClick={() => setRulesOpen(true)}>
+      📖 Rules
     </button>
   );
   const pauseButton = canPause && !paused && (
@@ -134,6 +141,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
             <h2 className="game-name">{game.name}</h2>
             <div className="row">
               {lobbyButton}
+              {rulesButton}
               <SoundToggle />
               {tradeButton}
               {pauseButton}
@@ -185,9 +193,10 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
             <h2 className="game-name">{game.name}</h2>
             <div className="side-buttons">
               {lobbyButton}
+              {rulesButton}
               <SoundToggle />
-              {forfeitButton}
               {pauseButton}
+              {forfeitButton}
             </div>
             <TradeOffers state={state} me={me} busy={requestBusy} onAction={onAction} />
             <SidePanel state={state} me={me} onChat={onChat} />
@@ -195,6 +204,7 @@ export function GameScreen({ game, me, busy: requestBusy, error, onAction, onCha
         )}
       </div>
 
+      <RulesDialog open={rulesOpen} onClose={() => setRulesOpen(false)} />
       {!wide && (
         <>
           <Log state={state} />
