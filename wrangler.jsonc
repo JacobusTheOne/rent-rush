@@ -1,0 +1,11 @@
+// Cloudflare Workers static assets: serves the Next.js static export in ./out.
+// The Worker name must match the one created in the Cloudflare dashboard.
+// Build command (dashboard): npm run build:prod   Deploy command: npx wrangler deploy
+{
+  "name": "rent-rush",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page"
+  }
+}

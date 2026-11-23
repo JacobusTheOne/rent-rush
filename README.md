@@ -41,26 +41,31 @@ To play multiplayer locally, open a second browser (or a private window) and sig
 
 ## Deploy (production)
 
-Live at **https://rent-rush-715.netlify.app**. Production uses its own backend (Amplify app
+Hosted on Cloudflare (Workers static assets). Production uses its own backend (Amplify app
 `rent-rush`, branch `main`, us-east-2), separate from your sandbox.
 
-- **Website:** Netlify builds from GitHub. Every push to `main` rebuilds the site with
-  `netlify.toml` (it copies `amplify_outputs.production.json` over `amplify_outputs.json` and
-  runs `npm run build`).
+**Branches:** `dev` is for day-to-day work (feature branches off `dev`) and is pushed to GitHub
+as a backup; it does **not** deploy. Only `main` deploys. To release: merge `dev` into `main`
+and push `main`.
+
+- **Website:** Cloudflare builds from GitHub. Every push to `main` runs `npm run build:prod`
+  (copies `amplify_outputs.production.json` over `amplify_outputs.json`, then `next build`) and
+  `npx wrangler deploy`, which publishes `out/` (see `wrangler.jsonc`). Builds for other
+  branches are switched off in the Cloudflare dashboard.
 - **Backend:** deployed from your machine (the AWS project blocks GitHub OIDC, and no
   long-lived AWS keys are stored in GitHub):
 
 ```bash
 npm run deploy:backend   # production backend (ampx pipeline-deploy); updates amplify_outputs.production.json
-git add amplify_outputs.production.json && git commit -m "Update production backend config" && git push
+git add amplify_outputs.production.json && git commit -m "Update production backend config"   # then release to main
 ```
 
 `amplify_outputs.production.json` is committed on purpose: it only holds public browser config
 (API URL, user/identity pool ids, the guests' public API key) that the live site serves anyway.
 Your local `amplify_outputs.json` stays pointed at your sandbox. Needs
-`aws login --profile aws-project`. `npm run deploy` (backend + manual upload with the Netlify CLI)
+`aws login --profile aws-project`. `npm run deploy` (backend + manual upload with `wrangler`)
 still works if you ever need to bypass the GitHub build. Security headers (CSP etc.) are in
-`netlify.toml`.
+`public/_headers`.
 
 ## Board art
 

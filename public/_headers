@@ -1,0 +1,13 @@
+# Security headers, read by Cloudflare from out/_headers (Next.js copies public/ there).
+# Not served as a file.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.appsync-api.us-east-2.amazonaws.com wss://*.appsync-realtime-api.us-east-2.amazonaws.com https://cognito-idp.us-east-2.amazonaws.com https://cognito-identity.us-east-2.amazonaws.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+# Board art changes rarely but is re-cut sometimes: let browsers revalidate.
+/board/*
+  Cache-Control: public, max-age=0, must-revalidate

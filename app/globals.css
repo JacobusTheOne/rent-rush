@@ -2454,7 +2454,7 @@ dialog.trade-dialog::backdrop {
 
 /* ---------- table chat ---------- */
 
-/* Bottom-left: the bottom-right corner is where hosting toolbars (e.g. Netlify's) sit. */
+/* Bottom-left: the bottom-right corner is where hosting toolbars (e.g. Cloudflare's or Netlify's) sit. */
 .chat {
   position: fixed;
   left: 16px;

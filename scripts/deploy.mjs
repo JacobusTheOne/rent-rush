@@ -4,7 +4,7 @@
  *   1. backend: `ampx pipeline-deploy` to the Amplify app in package.json config
  *      (Cognito, AppSync, Lambda, DynamoDB in the project's Region)
  *   2. frontend: `next build` against the PRODUCTION amplify_outputs, then
- *      `netlify deploy --prod` of ./out
+ *      `wrangler deploy` of ./out to Cloudflare (see wrangler.jsonc)
  * Local dev keeps pointing at your sandbox: ./amplify_outputs.json is restored at the end.
  *
  * Why from this machine: the AWS project's managed policies block GitHub OIDC
@@ -12,10 +12,10 @@
  *
  * Usage:
  *   npm run deploy:backend             # backend only: then commit amplify_outputs.production.json
- *                                      # and push; Netlify (linked to GitHub) rebuilds the site
+ *                                      # and push main; Cloudflare (linked to GitHub) rebuilds the site
  *   npm run deploy                     # backend + a manual frontend upload from this machine
  *   npm run deploy -- --skip-backend   # manual frontend upload only
- * Requires: `aws login --profile <awsProfile>`, `netlify login`, folder linked with `netlify link`.
+ * Requires: `aws login --profile <awsProfile>`; for a manual upload also `npx wrangler login`.
  */
 import { execSync } from "node:child_process";
 import { copyFileSync, existsSync, readFileSync, renameSync, rmSync } from "node:fs";
@@ -47,12 +47,12 @@ try {
   if (!existsSync(PROD)) throw new Error("No amplify_outputs.production.json yet: run without --skip-backend first.");
   if (backendOnly) {
     console.log(
-      "\nBackend deployed. Commit amplify_outputs.production.json if it changed and push: Netlify rebuilds the site.",
+      "\nBackend deployed. Commit amplify_outputs.production.json if it changed and push main: Cloudflare rebuilds the site.",
     );
   } else {
     copyFileSync(PROD, LOCAL);
     run("npm run build");
-    run("npx netlify deploy --prod --dir out");
+    run("npx wrangler deploy");
   }
 } finally {
   if (hadLocal) renameSync(BACKUP, LOCAL);

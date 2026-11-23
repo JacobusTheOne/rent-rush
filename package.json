@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:prod": "node -e \"require('fs').copyFileSync('amplify_outputs.production.json','amplify_outputs.json')\" && next build",
     "start": "npx serve out",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc --noEmit -p amplify/tsconfig.json",
