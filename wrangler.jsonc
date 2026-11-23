@@ -4,6 +4,9 @@
 {
   "name": "rent-rush",
   "compatibility_date": "2026-11-01",
+  // Serve at rent-rush.<subdomain>.workers.dev; no extra per-version preview URLs (only main is live).
+  "workers_dev": true,
+  "preview_urls": false,
   "assets": {
     "directory": "./out",
     "not_found_handling": "404-page"
